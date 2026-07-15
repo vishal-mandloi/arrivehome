@@ -1,0 +1,250 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36" version="29.3.6">
+  <diagram id="arrivehome-etl" name="AWS Glue ETL Architecture - MongoDB to Redshift (Arrive Home)">
+    <mxGraphModel dx="1281" dy="527" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1" value="Arrive Home BI ETL Pipeline - MongoDB → AWS Glue → Redshift Serverless → QuickSight" vertex="1">
+          <mxGeometry height="40" width="1280" x="260" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="source-layer" parent="1" style="swimlane;horizontal=0;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1" value="SOURCE LAYER" vertex="1">
+          <mxGeometry height="480" width="220" x="40" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="mongodb" parent="source-layer" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#4DB33D;strokeColor=#3D8B31;fontColor=#ffffff;fontSize=12" value="MongoDB&#xa;Database&#xa;(Production Source)" vertex="1">
+          <mxGeometry height="85" width="110" x="60" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="coll-loans" parent="source-layer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=10" value="loans" vertex="1">
+          <mxGeometry height="25" width="120" x="55" y="145" as="geometry" />
+        </mxCell>
+        <mxCell id="coll-correspondents" parent="source-layer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=10" value="correspondents" vertex="1">
+          <mxGeometry height="25" width="120" x="55" y="175" as="geometry" />
+        </mxCell>
+        <mxCell id="coll-users" parent="source-layer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=10" value="users" vertex="1">
+          <mxGeometry height="25" width="120" x="55" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="coll-loan-docs" parent="source-layer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=10" value="loan_documents" vertex="1">
+          <mxGeometry height="25" width="120" x="55" y="235" as="geometry" />
+        </mxCell>
+        <mxCell id="coll-conditions" parent="source-layer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=10" value="loan_conditions" vertex="1">
+          <mxGeometry height="25" width="120" x="55" y="265" as="geometry" />
+        </mxCell>
+        <mxCell id="coll-recon" parent="source-layer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=10" value="reconciliation_batches" vertex="1">
+          <mxGeometry height="25" width="120" x="55" y="295" as="geometry" />
+        </mxCell>
+        <mxCell id="coll-snapshots" parent="source-layer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=10" value="loan_snapshots" vertex="1">
+          <mxGeometry height="25" width="120" x="55" y="325" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-note" parent="source-layer" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontStyle=2" value="Document DB (JSON/BSON)&#xa;Nested arrays: borrowers[], assets[], liabilities[], eepProcessingEntries[]&#xa;Sensitive fields: ssn, email, phone, account numbers, credentials" vertex="1">
+          <mxGeometry height="70" width="200" x="20" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="ingestion-layer" parent="1" style="swimlane;horizontal=0;startSize=30;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1" value="INGESTION LAYER" vertex="1">
+          <mxGeometry height="480" width="240" x="300" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="glue-connection" parent="ingestion-layer" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fixedSize=1;fillColor=#FF9900;strokeColor=#232F3E;fontColor=#232F3E;fontSize=11" value="AWS Glue&#xa;MongoDB Connector&#xa;(Connection, VPC)" vertex="1">
+          <mxGeometry height="60" width="130" x="55" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="glue-crawler-raw" parent="ingestion-layer" style="shape=hexagon;perimeter=hexagonPerimeter2;whiteSpace=wrap;html=1;fixedSize=1;fillColor=#FF9900;strokeColor=#232F3E;fontColor=#232F3E;fontSize=11" value="AWS Glue&#xa;Crawler 0&#xa;(Mongo Schema Inference)" vertex="1">
+          <mxGeometry height="70" width="130" x="55" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="glue-catalog" parent="ingestion-layer" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#FF9900;strokeColor=#232F3E;fontColor=#232F3E;fontSize=11" value="AWS Glue&#xa;Data Catalog&#xa;(raw + curated tables)" vertex="1">
+          <mxGeometry height="70" width="130" x="55" y="215" as="geometry" />
+        </mxCell>
+        <mxCell id="secrets-mgr" parent="ingestion-layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DD344C;strokeColor=#232F3E;fontColor=#ffffff;fontSize=10" value="AWS Secrets&#xa;Manager&#xa;(MongoDB Creds)" vertex="1">
+          <mxGeometry height="50" width="100" x="70" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="kms-note" parent="ingestion-layer" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontStyle=2" value="Security&#xa;• KMS encryption (S3 + Redshift)&#xa;• IAM least privilege (Glue, Redshift, QuickSight)&#xa;• PII masking based on schema.js sensitive:true" vertex="1">
+          <mxGeometry height="70" width="200" x="20" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="processing-layer" parent="1" style="swimlane;horizontal=0;startSize=30;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;fontStyle=1" value="PROCESSING LAYER (AWS Glue ETL Jobs)" vertex="1">
+          <mxGeometry height="480" width="420" x="580" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="etl-job0" parent="processing-layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF9900;strokeColor=#232F3E;fontColor=#232F3E;fontSize=10;align=left;spacingLeft=10" value="Glue ETL Job 0: FLATTEN &amp; EXTRACT&#xa;&#xa;• Read MongoDB collections&#xa;• Flatten nested JSON/BSON (arrays + embedded docs)&#xa;• Standardize types (dateonly/datetime/decimal)&#xa;• Drop/mask PII (ssn, phones, emails, wire routing/account)&#xa;• Write Parquet → S3 Raw Zone" vertex="1">
+          <mxGeometry height="120" width="300" x="60" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="etl-job1" parent="processing-layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF9900;strokeColor=#232F3E;fontColor=#232F3E;fontSize=10;align=left;spacingLeft=10" value="Glue ETL Job 1: TRANSFORM (STAR SCHEMA)&#xa;• Build dimensions: dim_loan, dim_borrower, dim_correspondent, dim_user, dim_date, dim_product&#xa;• Build facts: fact_loan_status, fact_loan_documents, fact_conditions, fact_reconciliation&#xa;• Create analytical features for correlation charts (bands, cohorts, flags)" vertex="1">
+          <mxGeometry height="90" width="300" x="60" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="etl-job2" parent="processing-layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF9900;strokeColor=#232F3E;fontColor=#232F3E;fontSize=10;align=left;spacingLeft=10" value="Glue ETL Job 2: LOAD TO Athena&lt;br&gt;• Incremental loads (partition/date watermark)&lt;br&gt;• SCD Type 2 (optional) for key dimensions&lt;br&gt;• COPY from S3 Staging to Athena Serverless" vertex="1">
+          <mxGeometry height="75" width="300" x="60" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="proc-note" parent="processing-layer" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontStyle=2" value="Note: Job 0 is mandatory for MongoDB because schema.js contains many nested arrays and embedded documents." vertex="1">
+          <mxGeometry height="30" width="360" x="30" y="445" as="geometry" />
+        </mxCell>
+        <mxCell id="storage-layer" parent="1" style="swimlane;horizontal=0;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1" value="STAGING LAYER (S3)" vertex="1">
+          <mxGeometry height="480" width="220" x="1040" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s3-raw" parent="storage-layer" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#569A31;strokeColor=#232F3E;fontColor=#ffffff;fontSize=11" value="S3 Bucket&#xa;Raw Zone&#xa;(Parquet)" vertex="1">
+          <mxGeometry height="75" width="110" x="60" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s3-staging" parent="storage-layer" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#569A31;strokeColor=#232F3E;fontColor=#ffffff;fontSize=11" value="S3 Bucket&lt;br&gt;Staging for&lt;br&gt;Athena" vertex="1">
+          <mxGeometry height="75" width="110" x="60" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="s3-note" parent="storage-layer" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontStyle=2" value="Parquet + Snappy&#xa;Partitioned by date / workflowType / productType (as needed)" vertex="1">
+          <mxGeometry height="45" width="190" x="20" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="dw-layer" parent="1" style="swimlane;horizontal=0;startSize=30;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;fontStyle=1" value="DATA WAREHOUSE" vertex="1">
+          <mxGeometry height="480" width="240" x="1300" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="redshift" parent="dw-layer" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#8C4FFF;strokeColor=#232F3E;fontColor=#ffffff;fontSize=12" value="Amazon&lt;br&gt;Athena&lt;br&gt;Serverless" vertex="1">
+          <mxGeometry height="85" width="110" x="70" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="rs-dim" parent="dw-layer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#8C4FFF;fontColor=#333333;fontSize=9;align=left;spacingLeft=5;verticalAlign=top;spacingTop=5" value="Dimensions&#xa;────────────&#xa;dim_loan&#xa;dim_borrower&#xa;dim_correspondent&#xa;dim_user&#xa;dim_date&#xa;dim_product" vertex="1">
+          <mxGeometry height="120" width="150" x="45" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="rs-fact" parent="dw-layer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#8C4FFF;fontColor=#333333;fontSize=9;align=left;spacingLeft=5;verticalAlign=top;spacingTop=5" value="Facts&#xa;────────────&#xa;fact_loan_status&#xa;fact_loan_documents&#xa;fact_conditions&#xa;fact_reconciliation" vertex="1">
+          <mxGeometry height="105" width="150" x="45" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="rs-agg" parent="dw-layer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#8C4FFF;fontColor=#333333;fontSize=9;align=left;spacingLeft=5;verticalAlign=top;spacingTop=5" value="Materialized Views&#xa;────────────&#xa;mv_corr_dashboard&#xa;mv_monthly_metrics&#xa;mv_document_sla" vertex="1">
+          <mxGeometry height="85" width="150" x="45" y="395" as="geometry" />
+        </mxCell>
+        <mxCell id="viz-layer" parent="1" style="swimlane;horizontal=0;startSize=30;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=14;fontStyle=1" value="VISUALIZATION" vertex="1">
+          <mxGeometry height="480" width="200" x="1580" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="quicksight" parent="viz-layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#147EBA;strokeColor=#232F3E;fontColor=#ffffff;fontSize=12" value="Amazon&#xa;QuickSight" vertex="1">
+          <mxGeometry height="60" width="110" x="55" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="dash-correlation" parent="viz-layer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#147EBA;fontColor=#333333;fontSize=9;align=left;spacingLeft=5" value="Comparison / Correlation&#xa;Dashboard&#xa;• Correlate outcome (e.g., resignation)&#xa;  with drivers (cohorts/bands)&#xa;• Fast refresh via Redshift MVs" vertex="1">
+          <mxGeometry height="95" width="140" x="40" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="dash-ops" parent="viz-layer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#147EBA;fontColor=#333333;fontSize=9;align=left;spacingLeft=5" value="Operational Dashboards&#xa;• Pipeline health KPIs&#xa;• Loan status aging&#xa;• Document SLA / backlog" vertex="1">
+          <mxGeometry height="85" width="140" x="40" y="245" as="geometry" />
+        </mxCell>
+        <mxCell id="orchestration" parent="1" style="swimlane;startSize=25;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;fontStyle=1" value="ORCHESTRATION &amp; MONITORING" vertex="1">
+          <mxGeometry height="150" width="780" x="40" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="glue-workflow" parent="orchestration" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;fillColor=#FF9900;strokeColor=#232F3E;fontColor=#232F3E;fontSize=11" value="AWS Glue&#xa;Workflow&#xa;(Job Chain)" vertex="1">
+          <mxGeometry height="70" width="120" x="30" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="eventbridge" parent="orchestration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7157B;strokeColor=#232F3E;fontColor=#ffffff;fontSize=11" value="EventBridge&#xa;Scheduler&#xa;(Daily / Hourly)" vertex="1">
+          <mxGeometry height="70" width="120" x="170" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="cloudwatch" parent="orchestration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7157B;strokeColor=#232F3E;fontColor=#ffffff;fontSize=11" value="CloudWatch&#xa;Logs &amp; Alarms" vertex="1">
+          <mxGeometry height="70" width="120" x="310" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="sns" parent="orchestration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7157B;strokeColor=#232F3E;fontColor=#ffffff;fontSize=11" value="SNS Alerts&#xa;(Failures)" vertex="1">
+          <mxGeometry height="70" width="120" x="450" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="dlq-note" parent="orchestration" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=2" value="Optional: Dead-letter S3 prefix + reprocess mode for bad records (schema drift / parsing failures)" vertex="1">
+          <mxGeometry height="70" width="170" x="590" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow1" edge="1" parent="1" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="260" y="315" as="sourcePoint" />
+            <mxPoint x="300" y="315" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow2" edge="1" parent="1" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="540" y="315" as="sourcePoint" />
+            <mxPoint x="580" y="315" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow3" edge="1" parent="1" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1000" y="315" as="sourcePoint" />
+            <mxPoint x="1040" y="315" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow4" edge="1" parent="1" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1260" y="315" as="sourcePoint" />
+            <mxPoint x="1300" y="315" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow5" edge="1" parent="1" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1540" y="315" as="sourcePoint" />
+            <mxPoint x="1580" y="315" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontStyle=2" value="MongoDB&#xa;Connector" vertex="1">
+          <mxGeometry height="30" width="60" x="255" y="285" as="geometry" />
+        </mxCell>
+        <mxCell id="label2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontStyle=2" value="Catalog&#xa;Tables" vertex="1">
+          <mxGeometry height="30" width="60" x="535" y="285" as="geometry" />
+        </mxCell>
+        <mxCell id="label3" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontStyle=2" value="Parquet&#xa;Files" vertex="1">
+          <mxGeometry height="30" width="60" x="995" y="285" as="geometry" />
+        </mxCell>
+        <mxCell id="label4" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontStyle=2" value="COPY&#xa;Load" vertex="1">
+          <mxGeometry height="30" width="60" x="1255" y="285" as="geometry" />
+        </mxCell>
+        <mxCell id="label5" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontStyle=2" value="Direct&#xa;Connect" vertex="1">
+          <mxGeometry height="30" width="60" x="1535" y="285" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" parent="1" style="swimlane;startSize=20;fillColor=#ffffff;strokeColor=#000000;fontSize=11;fontStyle=1" value="Legend" vertex="1">
+          <mxGeometry height="150" width="920" x="860" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="leg1" parent="legend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4DB33D;strokeColor=#3D8B31;fontColor=#ffffff;fontSize=9" value="MongoDB" vertex="1">
+          <mxGeometry height="30" width="90" x="10" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="leg2" parent="legend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF9900;strokeColor=#232F3E;fontColor=#232F3E;fontSize=9" value="AWS Glue" vertex="1">
+          <mxGeometry height="30" width="90" x="110" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="leg3" parent="legend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#569A31;strokeColor=#232F3E;fontColor=#ffffff;fontSize=9" value="S3 Storage" vertex="1">
+          <mxGeometry height="30" width="90" x="210" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="leg4" parent="legend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#8C4FFF;strokeColor=#232F3E;fontColor=#ffffff;fontSize=9" value="Redshift" vertex="1">
+          <mxGeometry height="30" width="90" x="310" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="leg5" parent="legend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#147EBA;strokeColor=#232F3E;fontColor=#ffffff;fontSize=9" value="QuickSight" vertex="1">
+          <mxGeometry height="30" width="90" x="410" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="leg6" parent="legend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7157B;strokeColor=#232F3E;fontColor=#ffffff;fontSize=9" value="Monitoring" vertex="1">
+          <mxGeometry height="30" width="90" x="510" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="leg7" parent="legend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DD344C;strokeColor=#232F3E;fontColor=#ffffff;fontSize=9" value="Security" vertex="1">
+          <mxGeometry height="30" width="90" x="610" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-note" parent="legend" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=1" value="New data flow: MongoDB → Glue MongoDB Connector → Glue ETL (Flatten JSON) → S3 (Parquet) → Glue ETL (Transform) → S3 (Staging) → COPY → Redshift Serverless → QuickSight" vertex="1">
+          <mxGeometry height="40" width="880" x="10" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="data-model" parent="1" style="swimlane;startSize=25;fillColor=#e6e6e6;strokeColor=#666666;fontSize=12;fontStyle=1" value="REDSHIFT DATA MODEL (Star Schema - Based on schema.js)" vertex="1">
+          <mxGeometry height="560" width="1740" x="40" y="770" as="geometry" />
+        </mxCell>
+        <mxCell id="fact-label" parent="data-model" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontStyle=1" value="FACT TABLES" vertex="1">
+          <mxGeometry height="20" width="120" x="20" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="fact-loan-status" parent="data-model" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#333333;fontSize=9;align=left;spacingLeft=5;verticalAlign=top;spacingTop=5" value="fact_loan_status&#xa;─────────────────&#xa;loan_status_id (PK)&#xa;loan_key (FK) → dim_loan&#xa;date_key (FK) → dim_date&#xa;status VARCHAR (LOAN_STATUS_OPTIONS)&#xa;workflow_type VARCHAR&#xa;health VARCHAR&#xa;health_reason VARCHAR&#xa;registered_at TIMESTAMP&#xa;locked_at TIMESTAMP&#xa;purchased_at TIMESTAMP" vertex="1">
+          <mxGeometry height="210" width="240" x="20" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="fact-documents" parent="data-model" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#333333;fontSize=9;align=left;spacingLeft=5;verticalAlign=top;spacingTop=5" value="fact_loan_documents&#xa;─────────────────&#xa;loan_document_id (PK)&#xa;loan_key (FK) → dim_loan&#xa;date_key (FK) → dim_date&#xa;document_type VARCHAR&#xa;page_count INT&#xa;size_bytes INT&#xa;uploaded_at TIMESTAMP&#xa;uploaded_to_bluewater_at TIMESTAMP&#xa;archived_at TIMESTAMP" vertex="1">
+          <mxGeometry height="190" width="240" x="280" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="fact-recon" parent="data-model" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#333333;fontSize=9;align=left;spacingLeft=5;verticalAlign=top;spacingTop=5" value="fact_reconciliation&#xa;─────────────────&#xa;batch_id (PK)&#xa;correspondent_key (FK) → dim_correspondent&#xa;date_key (FK) → dim_date&#xa;status VARCHAR (RECONCILIATION_STATUS_OPTIONS)&#xa;total_loan_count INT&#xa;total_dpa_amount DECIMAL&#xa;processed_at TIMESTAMP&#xa;bots_processing_completed_at TIMESTAMP" vertex="1">
+          <mxGeometry height="190" width="260" x="540" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="dim-label" parent="data-model" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontStyle=1" value="DIMENSION TABLES" vertex="1">
+          <mxGeometry height="20" width="150" x="840" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="dim-loan" parent="data-model" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#333333;fontSize=9;align=left;spacingLeft=5;verticalAlign=top;spacingTop=5" value="dim_loan&#xa;─────────────────&#xa;loan_key (PK)&#xa;loan_id (Mongo _id)&#xa;ah_loan_number&#xa;workflow_type&#xa;product_type&#xa;correspondent_key (FK)&#xa;property_state&#xa;property_type&#xa;closing_date DATE&#xa;purchase_price DECIMAL" vertex="1">
+          <mxGeometry height="190" width="220" x="840" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="dim-borrower" parent="data-model" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#333333;fontSize=9;align=left;spacingLeft=5;verticalAlign=top;spacingTop=5" value="dim_borrower&#xa;─────────────────&#xa;borrower_key (PK)&#xa;loan_key (FK)&#xa;borrower_position INT&#xa;first_name (masked)&#xa;last_name (masked)&#xa;fico INT&#xa;monthly_income DECIMAL&#xa;current_state&#xa;marital_status" vertex="1">
+          <mxGeometry height="190" width="220" x="1080" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="dim-correspondent" parent="data-model" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#333333;fontSize=9;align=left;spacingLeft=5;verticalAlign=top;spacingTop=5" value="dim_correspondent&#xa;─────────────────&#xa;correspondent_key (PK)&#xa;correspondent_id (Mongo _id)&#xa;postgres_id INT&#xa;name&#xa;state&#xa;enabled_product_types&#xa;account_executive_user_key (FK)" vertex="1">
+          <mxGeometry height="170" width="220" x="1320" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="dim-date" parent="data-model" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#333333;fontSize=9;align=left;spacingLeft=5;verticalAlign=top;spacingTop=5" value="dim_date&#xa;─────────────────&#xa;date_key (PK) INT&#xa;full_date DATE&#xa;year SMALLINT&#xa;quarter SMALLINT&#xa;month SMALLINT&#xa;month_name VARCHAR&#xa;is_weekend BOOLEAN" vertex="1">
+          <mxGeometry height="160" width="160" x="1560" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="mv-label" parent="data-model" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontStyle=1" value="MATERIALIZED VIEWS (Pre-aggregated for QuickSight)" vertex="1">
+          <mxGeometry height="20" width="420" x="20" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="mv-corr" parent="data-model" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#333333;fontSize=9;align=left;spacingLeft=5;verticalAlign=top;spacingTop=5" value="mv_corr_dashboard&#xa;─────────────────&#xa;cohort_month&#xa;workflow_type&#xa;product_type&#xa;fico_band&#xa;dti_band&#xa;outcome_flag (e.g., resignation/attrition)&#xa;count_records&#xa;correlation_metrics" vertex="1">
+          <mxGeometry height="170" width="320" x="20" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="mv-monthly" parent="data-model" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#333333;fontSize=9;align=left;spacingLeft=5;verticalAlign=top;spacingTop=5" value="mv_monthly_metrics&#xa;─────────────────&#xa;year_month&#xa;correspondent&#xa;total_loans&#xa;total_volume&#xa;avg_turnaround_days&#xa;doc_sla_breaches" vertex="1">
+          <mxGeometry height="150" width="260" x="360" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="note_redshift_rationale" parent="data-model" style="shape=note;whiteSpace=wrap;rounded=1;fillColor=#FFFDE7;strokeColor=#FBC02D;fontColor=#000000;" value="Senior Architect Rationale for Redshift Serverless:&#xa;1. Complex correlation queries benefit from columnar storage + MPP&#xa;2. QuickSight performance: direct Redshift connection (low latency)&#xa;3. Materialized views: pre-aggregate heavy queries for instant dashboards&#xa;4. Serverless: no cluster ops, auto-scales, pay-per-use" vertex="1">
+          <mxGeometry height="150" width="520" x="640" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="note_glue_benefits" parent="data-model" style="shape=note;whiteSpace=wrap;rounded=1;fillColor=#E8F5E9;strokeColor=#388E3C;fontColor=#000000;" value="Senior Data Architect Recommendations - Why AWS Glue for MongoDB → Analytics&#xa;&#xa;Compared Options (for ETL / Integration Layer):&#xa;- Custom EMR / Spark Jobs: Flexible but higher DevOps overhead, harder for new BI devs&#xa;- Lambda + Custom Code: Good for event-based small payloads, not ideal for large batch ETL&#xa;- Third-party ETL Tools: Extra licensing, less native AWS integration&#xa;&#xa;Why AWS Glue is Recommended Here:&#xa;1. Serverless ETL with native MongoDB connector → no cluster management&#xa;2. Integrated Data Catalog used by Athena, Redshift, and Glue jobs&#xa;3. Built-in support for schema inference and nested JSON/BSON flattening&#xa;4. Orchestration via Glue Workflows + EventBridge, with CloudWatch monitoring&#xa;5. Tight integration with S3 and Redshift COPY → simpler, end-to-end AWS pipeline" vertex="1">
+          <mxGeometry height="210" width="520" x="1180" y="320" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

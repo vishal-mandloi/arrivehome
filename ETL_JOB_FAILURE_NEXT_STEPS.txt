@@ -1,0 +1,235 @@
+================================================================================
+ETL JOB FAILED – WHAT TO DO NEXT (AWS GLUE)
+================================================================================
+
+This guide covers the steps to take when an AWS Glue ETL job fails, how to
+diagnose the cause, fix it, and prevent similar failures.
+
+================================================================================
+STEP 1: CONFIRM THE FAILURE
+================================================================================
+
+1. Open AWS Glue Console
+   - Go to: ETL jobs → Your job (e.g., dpa-monthly-closings-report)
+   - Click the "Runs" tab
+
+2. Check run status:
+   - Status: Failed (red X)
+   - Note: Run ID, Start time, Duration, Error message (if shown)
+
+3. Write down:
+   - Job run ID (e.g., jr_xxxxxxxxxxxx)
+   - Exact error message from the Runs table
+   - Time of failure
+
+================================================================================
+STEP 2: VIEW CLOUDWATCH LOGS (MOST IMPORTANT)
+================================================================================
+
+1. In the same run row, click "View logs" (or "Logs" link)
+
+2. Or go to CloudWatch Console:
+   - Log groups → /aws-glue/jobs/output
+   - Find log stream: job-run-id = your Run ID
+
+3. Look for:
+   - ERROR or Exception lines (scroll to bottom first – error is often last)
+   - Stack trace (Python traceback)
+   - Glue-specific errors (e.g., "Table not found", "Connection refused")
+
+4. Common log patterns:
+   - "Table not found" → Catalog/table name or database wrong
+   - "Connection refused" / "Timeout" → Network, MongoDB unreachable
+   - "Access Denied" / "Permission denied" → IAM or S3/Glue permissions
+   - "KeyError" / "Column not found" → Schema change, wrong column name
+   - "OutOfMemory" / "Executor lost" → Need more workers or larger worker type
+   - "No space left" → Temporary storage / shuffle space
+
+5. Copy the full error message and stack trace for the next steps.
+
+================================================================================
+STEP 3: CHECK JOB METRICS (OPTIONAL)
+================================================================================
+
+1. In Glue Console: ETL jobs → Your job → "Runs" → Click the failed run
+
+2. Review:
+   - Duration (did it fail quickly or after long run?)
+   - DPU seconds / cost
+   - Number of workers used
+
+3. In CloudWatch Metrics (optional):
+   - Namespace: Glue
+   - Metric: glue.driver.ExecutorAllocationManager.executors.number
+   - Check if executors were lost or never started
+
+Use this to distinguish:
+- Early failure (config/source issue) vs late failure (data/volume issue)
+
+================================================================================
+STEP 4: FIX BY COMMON FAILURE TYPE
+================================================================================
+
+--- 4a. "Table not found" / "Database not found" ---
+
+Cause: Crawler not run, wrong DB/table name, or catalog permissions.
+
+Next steps:
+1. Run MongoDB crawler (Glue → Crawlers → Select crawler → Run).
+2. In Glue → Databases/Tables, confirm:
+   - Database: arrivehome_raw (or your name)
+   - Table: mongo_loan (or your table name).
+3. In job script, ensure:
+   - database="arrivehome_raw"
+   - table_name="mongo_loan"
+4. IAM role: must have glue:GetDatabase, glue:GetTable, glue:GetTables on catalog.
+
+Then: Re-run the job.
+
+--- 4b. "Connection refused" / "Timeout" / "Unable to connect to MongoDB" ---
+
+Cause: Network or MongoDB not reachable from Glue.
+
+Next steps:
+1. Glue connection: same VPC/subnets as MongoDB (or path to MongoDB).
+2. Security groups: allow port 27017 from Glue connection to MongoDB.
+3. If MongoDB in private subnet: Glue connection must use that subnet.
+4. Test: run crawler; if crawler also fails, fix network/SG first.
+5. If MongoDB is down: fix DB, then re-run job.
+
+Then: Re-run the job.
+
+--- 4c. "Access Denied" / "Permission denied" / S3 "403" ---
+
+Cause: IAM role missing permissions.
+
+Next steps:
+1. Open IAM → Roles → Your Glue job execution role.
+2. Add or fix policy:
+   - S3: s3:GetObject, s3:PutObject, s3:DeleteObject on bucket/prefix.
+   - Glue: glue:GetDatabase, glue:GetTable, glue:GetTables (and job run permissions).
+   - Logs: logs:CreateLogGroup, CreateLogStream, PutLogEvents.
+3. If using Secrets Manager for MongoDB: GetSecretValue on the secret.
+4. Save and re-run the job.
+
+Then: Re-run the job.
+
+--- 4d. "KeyError" / "Column not found" / "AnalysisException" ---
+
+Cause: Script expects a column that doesn’t exist (e.g. wrong case, renamed, or not in catalog).
+
+Next steps:
+1. In Glue → Tables → mongo_loan → View schema. Note exact column names (often lowercase).
+2. In your script, align column names (e.g. closedat vs closedAt, producttype vs productType).
+3. If schema changed: re-run crawler, then fix script to match new schema.
+4. Add null checks or use try/except for optional columns if needed.
+
+Then: Re-run the job.
+
+--- 4e. "OutOfMemory" / "Executor lost" / "Container killed" ---
+
+Cause: Not enough resources for data volume or shuffle.
+
+Next steps:
+1. Increase workers: Job details → Number of workers (e.g. 5 → 10).
+2. Use larger worker type: G.1X → G.2X (more memory per worker).
+3. Reduce partition size or add repartition in script if one partition is huge.
+4. For very large jobs: consider G.4X or more workers.
+
+Then: Re-run the job.
+
+--- 4f. "No data" / "Empty DataFrame" / Job succeeds but no output ---
+
+Cause: Filters too strict, wrong date range, or source empty.
+
+Next steps:
+1. Check MONTH/YEAR parameters (e.g. future month = no data).
+2. In script, log count after each filter (e.g. after DPA filter, after date filter).
+3. Run crawler and query catalog table (or MongoDB) to confirm data exists for that period.
+4. Relax filters temporarily to confirm job logic, then re-tighten.
+
+Then: Fix parameters or logic and re-run.
+
+--- 4g. Script syntax / runtime error (e.g. "NameError", "TypeError") ---
+
+Cause: Bug in Python script.
+
+Next steps:
+1. Read full traceback in CloudWatch logs (line number and exception).
+2. Fix the reported line (variable name, type, or logic).
+3. Test locally with sample data if possible, or run job with small date range.
+4. Save script to S3 and ensure job uses updated script version.
+
+Then: Re-run the job.
+
+================================================================================
+STEP 5: RE-RUN THE JOB
+================================================================================
+
+1. After applying the fix:
+   - Glue → ETL jobs → Your job → "Run" (same parameters), or
+   - "Run" with new parameters if you changed MONTH/YEAR or paths.
+
+2. For same parameters (retry):
+   - Runs tab → Select failed run → "Retry" (if available), or
+   - Just click "Run" again.
+
+3. If you need to re-process a past month:
+   - Set --MONTH and --YEAR to that month/year
+   - Set --OUTPUT_S3_PATH (same or different prefix to avoid overwriting if needed)
+   - Run the job.
+
+4. Confirm success:
+   - Runs tab → Status: Succeeded
+   - Check S3 output path for new Parquet files
+   - Optionally run a quick Athena query on the output
+
+================================================================================
+STEP 6: SET UP ALERTS FOR FUTURE FAILURES
+================================================================================
+
+1. CloudWatch Alarm for job failure:
+   - CloudWatch → Alarms → Create alarm
+   - Metric: Glue, Job runs, Job name = your job
+   - Condition: Failed runs ≥ 1 (or Sum over 1 run)
+   - Action: Send to SNS topic (e.g. email)
+
+2. Glue Job run notification (if available in your region):
+   - Glue → ETL jobs → Job → Notifications
+   - Add SNS topic for failure (and optionally success)
+
+3. EventBridge rule (optional):
+   - Rule: Glue Job Run State Change
+   - Target: Lambda to send Slack/email when status = FAILED
+
+4. Runbook: Keep this file (and HOW_TO_CREATE_DPA_REPORT_JOB.txt) in a shared
+   place and link it from the alarm description or runbook URL.
+
+================================================================================
+STEP 7: PREVENTION BEST PRACTICES
+================================================================================
+
+1. Always run crawler before the ETL job (same workflow or schedule).
+2. Use job parameters for MONTH/YEAR and paths (no hardcoding).
+3. Add logging in script: record counts after each major step.
+4. Start with a small date range or sample to validate before full history.
+5. Use version control for the script (e.g. S3 versioning or Git).
+6. Document the Glue role and required IAM permissions (as in setup guide).
+7. Set a reasonable job timeout (e.g. 60–120 min) to avoid runaway cost.
+8. Retry policy: Glue "Max retries" = 1 or 2 for transient failures.
+
+================================================================================
+QUICK REFERENCE: FAILURE CHECKLIST
+================================================================================
+
+[ ] 1. Note Run ID and error message from Glue Runs tab
+[ ] 2. Open CloudWatch logs and find ERROR/Exception and stack trace
+[ ] 3. Identify type: Catalog / Network / Permission / Schema / Resource / Data / Script
+[ ] 4. Apply fix from STEP 4 (4a–4g) above
+[ ] 5. Re-run the job and verify S3 output
+[ ] 6. If recurring: add CloudWatch alarm + SNS for failures
+[ ] 7. Update runbook or team docs with this failure and fix
+
+================================================================================
+END OF GUIDE
+================================================================================

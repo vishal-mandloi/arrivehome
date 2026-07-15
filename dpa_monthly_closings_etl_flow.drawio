@@ -1,0 +1,230 @@
+<mxfile host="app.diagrams.net" modified="2026-01-21T00:00:00.000Z" agent="DPA-Report-ETL" version="21.0.0" type="device">
+  <diagram id="dpa-etl-flow" name="DPA Monthly Closings ETL Flow">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="DPA Monthly Closings Report - AWS Glue ETL Job Flow" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="200" y="20" width="1400" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Source Layer -->
+        <mxCell id="source-layer" value="SOURCE" style="swimlane;horizontal=0;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="200" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mongodb" value="MongoDB&#xa;Loan Collection" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#4DB33D;strokeColor=#3D8B31;fontColor=#ffffff;fontSize=12" vertex="1" parent="source-layer">
+          <mxGeometry x="50" y="40" width="100" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="glue-catalog" value="Glue Data Catalog&#xa;arrivehome_raw.mongo_loan" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF9900;strokeColor=#232F3E;fontColor=#232F3E;fontSize=11" vertex="1" parent="source-layer">
+          <mxGeometry x="50" y="140" width="100" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Processing Layer -->
+        <mxCell id="processing-layer" value="AWS GLUE ETL PROCESSING" style="swimlane;horizontal=0;startSize=30;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="280" y="80" width="1000" height="600" as="geometry" />
+        </mxCell>
+
+        <!-- Step 1 -->
+        <mxCell id="step1" value="Step 1: Read Loans&#xa;from Catalog" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontColor=#333;fontSize=11" vertex="1" parent="processing-layer">
+          <mxGeometry x="20" y="40" width="150" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Step 2 -->
+        <mxCell id="step2" value="Step 2: Filter&#xa;productType = 'DPA'" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontColor=#333;fontSize=11" vertex="1" parent="processing-layer">
+          <mxGeometry x="200" y="40" width="150" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Step 3 -->
+        <mxCell id="step3" value="Step 3: Filter by&#xa;Closing Date&#xa;(Month/Year)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontColor=#333;fontSize=11" vertex="1" parent="processing-layer">
+          <mxGeometry x="380" y="40" width="150" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Step 4 -->
+        <mxCell id="step4" value="Step 4: Determine Buyer&#xa;USF vs MWF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontColor=#333;fontSize=11" vertex="1" parent="processing-layer">
+          <mxGeometry x="560" y="40" width="150" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Step 5 -->
+        <mxCell id="step5" value="Step 5: Extract&#xa;Year/Month" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontColor=#333;fontSize=11" vertex="1" parent="processing-layer">
+          <mxGeometry x="740" y="40" width="150" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Step 6 -->
+        <mxCell id="step6" value="Step 6: Aggregate&#xa;Count by Month &amp; Buyer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontColor=#333;fontSize=11" vertex="1" parent="processing-layer">
+          <mxGeometry x="920" y="40" width="150" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Buyer Logic Detail -->
+        <mxCell id="buyer-logic" value="BUYER DETERMINATION LOGIC" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1" vertex="1" parent="processing-layer">
+          <mxGeometry x="20" y="120" width="300" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="usf-logic" value="USF Indicators:&#xa;• firstMortgageOwnershipStatus contains 'USF'&#xa;• usfLoanNumber is populated" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#333;fontSize=10;align=left;spacingLeft=5" vertex="1" parent="processing-layer">
+          <mxGeometry x="20" y="160" width="280" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mwf-logic" value="MWF Indicators:&#xa;• mountainWestContractDate exists&#xa;• purchaseAdviceFirstPaymentToMountainWestDate exists&#xa;• mountainWestGoLiveDate exists" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#333;fontSize=10;align=left;spacingLeft=5" vertex="1" parent="processing-layer">
+          <mxGeometry x="320" y="160" width="300" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="priority" value="Priority: If both exist, USF takes precedence" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#333;fontSize=10" vertex="1" parent="processing-layer">
+          <mxGeometry x="640" y="160" width="250" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Output Schema -->
+        <mxCell id="output-schema" value="OUTPUT SCHEMA" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1" vertex="1" parent="processing-layer">
+          <mxGeometry x="20" y="260" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="agg-schema" value="Aggregated Report:&#xa;• closing_year, closing_month&#xa;• buyer (USF/MWF/Unknown)&#xa;• closing_count&#xa;• total_closings_month&#xa;• buyer_percentage" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#333;fontSize=10;align=left;spacingLeft=5" vertex="1" parent="processing-layer">
+          <mxGeometry x="20" y="300" width="250" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="detailed-schema" value="Detailed Report:&#xa;• ahLoanNumber&#xa;• closing_date&#xa;• buyer&#xa;• dpaAmount, dpaPercent&#xa;• correspondent&#xa;• All loan fields for drill-down" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#333;fontSize=10;align=left;spacingLeft=5" vertex="1" parent="processing-layer">
+          <mxGeometry x="290" y="300" width="250" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Job Parameters -->
+        <mxCell id="params-label" value="JOB PARAMETERS" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1" vertex="1" parent="processing-layer">
+          <mxGeometry x="560" y="260" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="params" value="--JOB_NAME=dpa-monthly-closings-report&#xa;--MONTH=01 (optional)&#xa;--YEAR=2026 (optional)&#xa;--OUTPUT_S3_PATH=s3://bucket/reports/..." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#333;fontSize=10;align=left;spacingLeft=5;fontFamily=Courier New" vertex="1" parent="processing-layer">
+          <mxGeometry x="560" y="300" width="300" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Scheduling -->
+        <mxCell id="schedule-label" value="SCHEDULING" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1" vertex="1" parent="processing-layer">
+          <mxGeometry x="560" y="420" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="schedule" value="EventBridge Scheduler:&#xa;• Monthly on 1st at 2 AM&#xa;• Cron: cron(0 2 1 * ? *)&#xa;• Auto-calculates previous month" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#333;fontSize=10;align=left;spacingLeft=5" vertex="1" parent="processing-layer">
+          <mxGeometry x="560" y="460" width="300" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Storage Layer -->
+        <mxCell id="storage-layer" value="OUTPUT STORAGE" style="swimlane;horizontal=0;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1320" y="80" width="200" height="300" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s3-agg" value="S3 Aggregated&#xa;Parquet&#xa;year=YYYY/month=MM/" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#569A31;strokeColor=#232F3E;fontColor=#ffffff;fontSize=11" vertex="1" parent="storage-layer">
+          <mxGeometry x="50" y="40" width="100" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s3-detailed" value="S3 Detailed&#xa;Parquet&#xa;year=YYYY/month=MM/buyer=BUYER/" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#569A31;strokeColor=#232F3E;fontColor=#ffffff;fontSize=11" vertex="1" parent="storage-layer">
+          <mxGeometry x="50" y="140" width="100" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s3-note" value="Format: Parquet&#xa;Compression: Snappy&#xa;Partitioned by date" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontStyle=2" vertex="1" parent="storage-layer">
+          <mxGeometry x="30" y="240" width="140" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Visualization Layer -->
+        <mxCell id="viz-layer" value="VISUALIZATION" style="swimlane;horizontal=0;startSize=30;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1320" y="400" width="200" height="280" as="geometry" />
+        </mxCell>
+
+        <mxCell id="athena" value="Amazon Athena&#xa;(Query S3)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#147EBA;strokeColor=#232F3E;fontColor=#ffffff;fontSize=11" vertex="1" parent="viz-layer">
+          <mxGeometry x="50" y="40" width="100" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="redshift" value="Amazon Redshift&#xa;(Optional Load)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#8C4FFF;strokeColor=#232F3E;fontColor=#ffffff;fontSize=11" vertex="1" parent="viz-layer">
+          <mxGeometry x="50" y="120" width="100" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="quicksight" value="Amazon QuickSight&#xa;Dashboard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#147EBA;strokeColor=#232F3E;fontColor=#ffffff;fontSize=11" vertex="1" parent="viz-layer">
+          <mxGeometry x="50" y="200" width="100" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Arrows -->
+        <mxCell id="arrow1" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="240" y="170" as="sourcePoint" />
+            <mxPoint x="280" y="170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow2" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="430" y="170" as="sourcePoint" />
+            <mxPoint x="470" y="170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow3" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="610" y="170" as="sourcePoint" />
+            <mxPoint x="650" y="170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow4" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="790" y="170" as="sourcePoint" />
+            <mxPoint x="830" y="170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow5" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="970" y="170" as="sourcePoint" />
+            <mxPoint x="1010" y="170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow6" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="1280" y="170" as="sourcePoint" />
+            <mxPoint x="1320" y="170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow7" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="1420" y="380" as="sourcePoint" />
+            <mxPoint x="1420" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Labels -->
+        <mxCell id="label1" value="Read" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="240" y="140" width="50" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="label2" value="Filter DPA" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="420" y="140" width="50" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="label3" value="Filter Date" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="600" y="140" width="50" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="label4" value="Determine Buyer" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="780" y="140" width="70" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="label5" value="Extract Date" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="960" y="140" width="50" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="label6" value="Aggregate" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="1140" y="140" width="50" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="label7" value="Write S3" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="1280" y="140" width="50" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Summary Box -->
+        <mxCell id="summary" value="REPORT OUTPUT:&#xa;• Monthly closing count by buyer (USF/MWF)&#xa;• Total closings per month&#xa;• Buyer percentage breakdown&#xa;• Detailed loan-level data for drill-down" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#333;fontSize=11;fontStyle=1;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="40" y="700" width="1480" height="80" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

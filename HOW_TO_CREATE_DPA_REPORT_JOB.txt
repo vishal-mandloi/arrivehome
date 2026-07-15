@@ -1,0 +1,293 @@
+================================================================================
+HOW TO CREATE AWS GLUE ETL JOB FOR DPA MONTHLY CLOSINGS REPORT
+================================================================================
+
+This guide walks you through creating the AWS Glue ETL job step-by-step.
+
+================================================================================
+PREREQUISITES
+================================================================================
+
+1. MongoDB Crawler must be run successfully
+   - Database: arrivehome_raw
+   - Table: mongo_loan (or as configured)
+
+2. S3 Bucket created for reports
+   - Path: s3://your-bi-bucket/reports/dpa-monthly-closings/
+
+3. IAM Role with permissions (see DPA_Monthly_Closings_Report_Setup.md)
+
+================================================================================
+STEP 1: UPLOAD PYTHON SCRIPT TO S3
+================================================================================
+
+1. Open AWS S3 Console
+2. Navigate to your scripts bucket (e.g., s3://your-bi-bucket/glue-scripts/)
+3. Upload file: glue_job_dpa_monthly_closings.py
+4. Note the full S3 path (you'll need it in Step 3)
+
+Example path: s3://your-bi-bucket/glue-scripts/dpa-monthly-closings.py
+
+================================================================================
+STEP 2: CREATE AWS GLUE JOB
+================================================================================
+
+1. Open AWS Glue Console
+   - Go to: https://console.aws.amazon.com/glue/
+   - Select your region (e.g., us-west-2)
+
+2. Navigate to ETL Jobs
+   - Click "ETL jobs" in left menu
+   - Click "Visual ETL" or "Scripts" tab
+   - Click "Create job" button
+
+3. Configure Job Details:
+   
+   Job Properties:
+   - Name: dpa-monthly-closings-report
+   - IAM Role: Select your Glue service role (with MongoDB/S3 permissions)
+   - Type: Spark
+   - Glue version: 4.0 (or latest available)
+   - Language: Python 3
+   - Script path: 
+     * Click "S3 path" radio button
+     * Browse to: s3://your-bi-bucket/glue-scripts/dpa-monthly-closings.py
+     * OR paste the S3 path directly
+
+4. Click "Create" button
+
+================================================================================
+STEP 3: CONFIGURE JOB PARAMETERS
+================================================================================
+
+1. In the job details page, scroll to "Job parameters" section
+2. Click "Add new parameter" for each parameter:
+
+   Parameter 1:
+   - Key: --JOB_NAME
+   - Value: dpa-monthly-closings-report
+
+   Parameter 2:
+   - Key: --MONTH
+   - Value: 01
+   (Leave empty or omit for all months)
+
+   Parameter 3:
+   - Key: --YEAR
+   - Value: 2026
+   (Leave empty or omit for all years)
+
+   Parameter 4:
+   - Key: --OUTPUT_S3_PATH
+   - Value: s3://your-bi-bucket/reports/dpa-monthly-closings
+
+3. Click "Save" button
+
+================================================================================
+STEP 4: CONFIGURE ADVANCED PROPERTIES
+================================================================================
+
+1. Scroll to "Advanced properties" section
+
+2. Worker Configuration:
+   - Worker type: G.1X (for small-medium data) or G.2X (for large datasets)
+   - Number of workers: Auto (or set manually: 2-10 based on data size)
+   - Job timeout: 60 minutes
+
+3. Job Metrics:
+   - Enable job metrics: Yes (recommended)
+
+4. Connections:
+   - If reading directly from MongoDB (not via catalog), add MongoDB connection
+   - Otherwise, leave empty (uses Glue Data Catalog)
+
+5. Click "Save" button
+
+================================================================================
+STEP 5: TEST RUN THE JOB
+================================================================================
+
+1. Click "Run" button (top right)
+2. Wait for job to complete (check "Runs" tab)
+3. Check CloudWatch Logs:
+   - Click on the run
+   - Click "View logs" link
+   - Look for any errors
+
+4. Verify S3 Output:
+   - Go to S3 Console
+   - Navigate to: s3://your-bi-bucket/reports/dpa-monthly-closings/
+   - Check that Parquet files are created
+
+Expected output structure:
+  reports/dpa-monthly-closings/
+    aggregated/
+      year=2026/month=01/
+        part-00000-xxx.snappy.parquet
+    detailed/
+      year=2026/month=01/buyer=USF/
+        part-00000-xxx.snappy.parquet
+      year=2026/month=01/buyer=MWF/
+        part-00000-xxx.snappy.parquet
+
+================================================================================
+STEP 6: SCHEDULE THE JOB (OPTIONAL)
+================================================================================
+
+Option A: Using EventBridge Scheduler
+
+1. Open Amazon EventBridge Console
+2. Click "Schedules" in left menu
+3. Click "Create schedule"
+4. Configure:
+   - Name: dpa-report-monthly
+   - Schedule type: Recurring schedule
+   - Schedule pattern: Cron-based
+   - Cron expression: cron(0 2 1 * ? *)
+     (Runs at 2 AM on 1st of each month)
+5. Target:
+   - Target type: AWS Glue job
+   - Job name: dpa-monthly-closings-report
+   - Job parameters: (same as Step 3)
+6. Click "Create"
+
+Option B: Using Glue Workflow
+
+1. Open AWS Glue Console
+2. Click "Workflows" in left menu
+3. Click "Add workflow"
+4. Name: dpa-reporting-workflow
+5. Add trigger: Schedule (monthly on 1st at 2 AM)
+6. Add job: dpa-monthly-closings-report
+7. Configure job parameters
+8. Save workflow
+
+================================================================================
+STEP 7: QUERY RESULTS
+================================================================================
+
+Using Amazon Athena:
+
+1. Open Amazon Athena Console
+2. Create table (one-time setup):
+
+CREATE EXTERNAL TABLE dpa_monthly_closings_report (
+  closing_year INT,
+  closing_month INT,
+  closing_year_month STRING,
+  buyer STRING,
+  closing_count BIGINT,
+  total_closings_month BIGINT,
+  buyer_percentage DECIMAL(5,2),
+  first_closing_date TIMESTAMP,
+  last_closing_date TIMESTAMP
+)
+PARTITIONED BY (
+  closing_year INT,
+  closing_month INT
+)
+STORED AS PARQUET
+LOCATION 's3://your-bi-bucket/reports/dpa-monthly-closings/aggregated/'
+TBLPROPERTIES ('projection.enabled'='true',
+               'projection.closing_year.type'='integer',
+               'projection.closing_year.range'='2020,2030',
+               'projection.closing_month.type'='integer',
+               'projection.closing_month.range'='1,12');
+
+3. Query the data:
+
+-- Get closings for January 2026
+SELECT 
+  closing_year_month,
+  buyer,
+  closing_count,
+  total_closings_month,
+  buyer_percentage
+FROM dpa_monthly_closings_report
+WHERE closing_year = 2026 
+  AND closing_month = 1
+ORDER BY buyer;
+
+-- Compare USF vs MWF over time
+SELECT 
+  closing_year_month,
+  SUM(CASE WHEN buyer = 'USF' THEN closing_count ELSE 0 END) as usf_closings,
+  SUM(CASE WHEN buyer = 'MWF' THEN closing_count ELSE 0 END) as mwf_closings,
+  SUM(closing_count) as total_closings
+FROM dpa_monthly_closings_report
+WHERE closing_year >= 2025
+GROUP BY closing_year_month
+ORDER BY closing_year_month;
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+Issue: Job fails with "Table not found"
+Solution: 
+- Verify MongoDB crawler has run successfully
+- Check database name: arrivehome_raw
+- Check table name: mongo_loan
+- Verify IAM role has Glue catalog read permissions
+
+Issue: Job fails with "S3 access denied"
+Solution:
+- Verify IAM role has S3 write permissions
+- Check S3 bucket policy allows Glue service role
+- Verify S3 path is correct
+
+Issue: No DPA loans found
+Solution:
+- Check productType field values in MongoDB (case sensitivity)
+- Verify crawler correctly cataloged the field
+- Check filter logic in script
+
+Issue: All buyers show as "Unknown"
+Solution:
+- Check field names match schema (camelCase vs lowercase)
+- Verify MongoDB fields are populated
+- Review buyer determination logic in script
+
+Issue: Job runs but no output
+Solution:
+- Check CloudWatch logs for errors
+- Verify OUTPUT_S3_PATH parameter is correct
+- Check S3 bucket exists and is accessible
+
+================================================================================
+IMPORTANT NOTES
+================================================================================
+
+1. Always run MongoDB crawler before running this job to ensure schema is current
+
+2. Job parameters MONTH and YEAR are optional:
+   - If provided: processes only that month/year
+   - If omitted: processes all DPA closings (for historical reports)
+
+3. Buyer determination logic:
+   - USF: firstMortgageOwnershipStatus contains "USF" OR usfLoanNumber exists
+   - MWF: mountainWestContractDate OR purchaseAdviceFirstPaymentToMountainWestDate exists
+   - Adjust logic in script if business rules differ
+
+4. Output format: Parquet with Snappy compression (efficient for analytics)
+
+5. Partitioning: Data is partitioned by year/month for fast queries
+
+6. Cost optimization:
+   - Use appropriate worker types (G.1X for small data)
+   - Set job timeout to prevent runaway costs
+   - Monitor job duration and adjust workers
+
+================================================================================
+SUPPORT
+================================================================================
+
+For issues:
+1. Check CloudWatch Logs: /aws-glue/jobs/output
+2. Review Glue job metrics in console
+3. Validate MongoDB data directly
+4. Test with small date range first
+
+================================================================================
+END OF GUIDE
+================================================================================

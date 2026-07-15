@@ -1,0 +1,489 @@
+<mxfile host="app.diagrams.net" modified="2026-01-23T00:00:00.000Z" agent="5.0" etag="cost-comparison-v1" version="21.0.0" type="device">
+  <diagram id="cost-comparison" name="MongoDB to BI - Cost Comparison">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="MongoDB to BI Analytics - Cost Comparison &amp; Architecture Options" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=28;fontStyle=1;fontColor=#1a1a2e" vertex="1" parent="1">
+          <mxGeometry x="300" y="20" width="1000" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="subtitle" value="ArriveHome - Data Warehouse Strategy Analysis" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=2;fontColor=#666666" vertex="1" parent="1">
+          <mxGeometry x="500" y="65" width="600" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Option 1: Current Architecture (Redshift Serverless) -->
+        <mxCell id="option1-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#cc0000;strokeWidth=2" vertex="1" parent="1">
+          <mxGeometry x="40" y="120" width="480" height="320" as="geometry" />
+        </mxCell>
+
+        <mxCell id="option1-title" value="❌ OPTION A: Redshift Serverless (Current)" style="text;html=1;strokeColor=none;fillColor=#cc0000;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=16;fontStyle=1;fontColor=#ffffff" vertex="1" parent="1">
+          <mxGeometry x="50" y="130" width="460" height="35" as="geometry" />
+        </mxCell>
+
+        <mxCell id="option1-cost" value="~$3,800/month" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=32;fontStyle=1;fontColor=#cc0000" vertex="1" parent="1">
+          <mxGeometry x="50" y="170" width="460" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="option1-yearly" value="(~$45,600/year)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontColor=#666666" vertex="1" parent="1">
+          <mxGeometry x="50" y="215" width="460" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Option 1 Cost Breakdown -->
+        <mxCell id="opt1-glue" value="AWS Glue Jobs" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="60" y="250" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="opt1-glue-cost" value="$1,320" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="240" y="250" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="opt1-redshift" value="Redshift Serverless" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e6b3ff;strokeColor=#9933ff;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="60" y="285" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="opt1-redshift-cost" value="$2,160" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e6b3ff;strokeColor=#9933ff;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="240" y="285" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="opt1-s3" value="S3 Storage" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="60" y="320" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="opt1-s3-cost" value="$12" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="240" y="320" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="opt1-qs" value="QuickSight" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="60" y="355" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="opt1-qs-cost" value="$220" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="240" y="355" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="opt1-other" value="Other (Crawlers, Step Functions)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="60" y="390" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="opt1-other-cost" value="$88" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="240" y="390" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Option 1 Pros/Cons -->
+        <mxCell id="opt1-pros" value="✅ Best Query Performance&#xa;✅ Full BI Compatibility&#xa;✅ Real-time Dashboards" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#006600" vertex="1" parent="1">
+          <mxGeometry x="340" y="255" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="opt1-cons" value="❌ Highest Cost&#xa;❌ Overkill for Reports&#xa;❌ Runs Continuously" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#cc0000" vertex="1" parent="1">
+          <mxGeometry x="340" y="320" width="170" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Option 2: Recommended (Athena) -->
+        <mxCell id="option2-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ccffcc;strokeColor=#00cc00;strokeWidth=3" vertex="1" parent="1">
+          <mxGeometry x="560" y="120" width="480" height="320" as="geometry" />
+        </mxCell>
+
+        <mxCell id="option2-badge" value="🏆 RECOMMENDED" style="text;html=1;strokeColor=none;fillColor=#ffcc00;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=12;fontStyle=1;fontColor=#000000" vertex="1" parent="1">
+          <mxGeometry x="890" y="100" width="140" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="option2-title" value="✅ OPTION B: Amazon Athena" style="text;html=1;strokeColor=none;fillColor=#00cc00;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=16;fontStyle=1;fontColor=#ffffff" vertex="1" parent="1">
+          <mxGeometry x="570" y="130" width="460" height="35" as="geometry" />
+        </mxCell>
+
+        <mxCell id="option2-cost" value="~$350/month" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=32;fontStyle=1;fontColor=#00cc00" vertex="1" parent="1">
+          <mxGeometry x="570" y="170" width="460" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="option2-yearly" value="(~$4,200/year)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontColor=#666666" vertex="1" parent="1">
+          <mxGeometry x="570" y="215" width="460" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Option 2 Cost Breakdown -->
+        <mxCell id="opt2-glue" value="AWS Glue Jobs (reduced)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="580" y="250" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="opt2-glue-cost" value="$50-100" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="760" y="250" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="opt2-athena" value="Athena Queries" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#b3e0ff;strokeColor=#0066cc;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="580" y="285" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="opt2-athena-cost" value="$20-50" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#b3e0ff;strokeColor=#0066cc;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="760" y="285" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="opt2-s3" value="S3 Storage" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="580" y="320" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="opt2-s3-cost" value="$12" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="760" y="320" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="opt2-qs" value="QuickSight" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="580" y="355" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="opt2-qs-cost" value="$220" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="760" y="355" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="opt2-crawler" value="Glue Crawler" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="580" y="390" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="opt2-crawler-cost" value="$5" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="760" y="390" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Option 2 Pros/Cons -->
+        <mxCell id="opt2-pros" value="✅ 90% Cost Savings&#xa;✅ Fully Serverless&#xa;✅ Pay Per Query&#xa;✅ Zero Infrastructure&#xa;✅ Uses Existing S3 Data" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#006600" vertex="1" parent="1">
+          <mxGeometry x="860" y="250" width="170" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="opt2-cons" value="⚠️ Slower for Complex Queries&#xa;⚠️ Less Real-time" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#cc6600" vertex="1" parent="1">
+          <mxGeometry x="860" y="350" width="170" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Option 3: Redshift Provisioned -->
+        <mxCell id="option3-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffcc;strokeColor=#cccc00;strokeWidth=2" vertex="1" parent="1">
+          <mxGeometry x="1080" y="120" width="480" height="320" as="geometry" />
+        </mxCell>
+
+        <mxCell id="option3-title" value="⚖️ OPTION C: Redshift Provisioned" style="text;html=1;strokeColor=none;fillColor=#cccc00;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=16;fontStyle=1;fontColor=#000000" vertex="1" parent="1">
+          <mxGeometry x="1090" y="130" width="460" height="35" as="geometry" />
+        </mxCell>
+
+        <mxCell id="option3-cost" value="~$900/month" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=32;fontStyle=1;fontColor=#999900" vertex="1" parent="1">
+          <mxGeometry x="1090" y="170" width="460" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="option3-yearly" value="(~$10,800/year)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontColor=#666666" vertex="1" parent="1">
+          <mxGeometry x="1090" y="215" width="460" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Option 3 Cost Breakdown -->
+        <mxCell id="opt3-glue" value="AWS Glue Jobs" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="1100" y="250" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="opt3-glue-cost" value="$100" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1280" y="250" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="opt3-redshift" value="Redshift dc2.large" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e6b3ff;strokeColor=#9933ff;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="1100" y="285" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="opt3-redshift-cost" value="$550" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e6b3ff;strokeColor=#9933ff;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1280" y="285" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="opt3-s3" value="S3 Storage" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="1100" y="320" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="opt3-s3-cost" value="$12" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1280" y="320" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="opt3-qs" value="QuickSight" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="1100" y="355" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="opt3-qs-cost" value="$220" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1280" y="355" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Option 3 Pros/Cons -->
+        <mxCell id="opt3-pros" value="✅ Best Performance&#xa;✅ Full BI Features&#xa;✅ 70% Cheaper than Serverless" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#006600" vertex="1" parent="1">
+          <mxGeometry x="1380" y="255" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="opt3-cons" value="⚠️ Fixed Cost (always running)&#xa;⚠️ More Ops Effort&#xa;⚠️ Capacity Planning Needed" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#cc6600" vertex="1" parent="1">
+          <mxGeometry x="1380" y="325" width="170" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Savings Comparison -->
+        <mxCell id="savings-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6ffe6;strokeColor=#00cc00;strokeWidth=2" vertex="1" parent="1">
+          <mxGeometry x="40" y="470" width="1520" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="savings-title" value="💰 ANNUAL SAVINGS COMPARISON" style="text;html=1;strokeColor=none;fillColor=#00cc00;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=18;fontStyle=1;fontColor=#ffffff" vertex="1" parent="1">
+          <mxGeometry x="550" y="480" width="500" height="35" as="geometry" />
+        </mxCell>
+
+        <mxCell id="savings-current" value="Current (Redshift Serverless)&#xa;$45,600/year" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#cc0000;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="80" y="525" width="200" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="savings-arrow1" value="→" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="290" y="525" width="60" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="savings-athena" value="Athena&#xa;$4,200/year" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ccffcc;strokeColor=#00cc00;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="360" y="525" width="150" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="savings-equals1" value="=" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="520" y="525" width="40" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="savings-amount1" value="SAVE $41,400/year&#xa;(91% reduction!)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00cc00;strokeColor=#009900;fontSize=16;fontStyle=1;fontColor=#ffffff" vertex="1" parent="1">
+          <mxGeometry x="570" y="525" width="200" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="savings-divider" value="|" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=48;fontColor=#cccccc" vertex="1" parent="1">
+          <mxGeometry x="790" y="510" width="30" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="savings-arrow2" value="→" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="830" y="525" width="60" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="savings-provisioned" value="Redshift Provisioned&#xa;$10,800/year" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffcc;strokeColor=#cccc00;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="900" y="525" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="savings-equals2" value="=" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=36;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1090" y="525" width="40" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="savings-amount2" value="SAVE $34,800/year&#xa;(76% reduction)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#cccc00;strokeColor=#999900;fontSize=16;fontStyle=1;fontColor=#000000" vertex="1" parent="1">
+          <mxGeometry x="1140" y="525" width="200" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Architecture Diagram -->
+        <mxCell id="arch-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#666666;strokeWidth=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="620" width="1520" height="280" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arch-title" value="🏗️ RECOMMENDED ARCHITECTURE (Athena-Based)" style="text;html=1;strokeColor=none;fillColor=#333333;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=18;fontStyle=1;fontColor=#ffffff" vertex="1" parent="1">
+          <mxGeometry x="500" y="630" width="600" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- MongoDB -->
+        <mxCell id="arch-mongo" value="MongoDB&#xa;(Production)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#4DB33D;strokeColor=#3D8B31;fontColor=#ffffff;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="80" y="700" width="100" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arch-arrow1" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#FF9900" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="190" y="740" as="sourcePoint" />
+            <mxPoint x="270" y="740" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arch-label1" value="Daily&#xa;Extract" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="200" y="705" width="60" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Glue Job -->
+        <mxCell id="arch-glue" value="AWS Glue&#xa;ETL Job&#xa;(Extract)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF9900;strokeColor=#232F3E;fontColor=#232F3E;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="280" y="700" width="120" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arch-arrow2" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#569A31" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="410" y="740" as="sourcePoint" />
+            <mxPoint x="490" y="740" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arch-label2" value="Parquet" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="420" y="715" width="60" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- S3 -->
+        <mxCell id="arch-s3" value="S3 Staging&#xa;Zone&#xa;(Parquet)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#569A31;strokeColor=#232F3E;fontColor=#ffffff;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="500" y="700" width="120" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arch-arrow3" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#FF9900" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="630" y="740" as="sourcePoint" />
+            <mxPoint x="710" y="740" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arch-label3" value="Crawl" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="640" y="715" width="60" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Glue Catalog -->
+        <mxCell id="arch-catalog" value="Glue Data&#xa;Catalog&#xa;(Tables)" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#FF9900;strokeColor=#232F3E;fontColor=#232F3E;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="720" y="700" width="120" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arch-arrow4" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#0066cc" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="850" y="740" as="sourcePoint" />
+            <mxPoint x="930" y="740" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arch-label4" value="Query" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="860" y="715" width="60" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Athena -->
+        <mxCell id="arch-athena" value="Amazon&#xa;Athena&#xa;(Serverless)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0066cc;strokeColor=#003366;fontColor=#ffffff;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="940" y="700" width="120" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arch-arrow5" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#147EBA" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="1070" y="740" as="sourcePoint" />
+            <mxPoint x="1150" y="740" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arch-label5" value="Connect" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="1080" y="715" width="60" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- QuickSight -->
+        <mxCell id="arch-quicksight" value="Amazon&#xa;QuickSight&#xa;(Dashboards)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#147EBA;strokeColor=#0d5a8c;fontColor=#ffffff;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="1160" y="700" width="120" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arch-arrow6" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#666666" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="1290" y="740" as="sourcePoint" />
+            <mxPoint x="1370" y="740" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Users -->
+        <mxCell id="arch-users" value="👥&#xa;Business&#xa;Users" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="1380" y="700" width="100" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Cost per component -->
+        <mxCell id="cost-mongo" value="$0" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=1;fontColor=#4DB33D" vertex="1" parent="1">
+          <mxGeometry x="80" y="785" width="100" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="cost-glue" value="~$50-100/mo" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=1;fontColor=#FF9900" vertex="1" parent="1">
+          <mxGeometry x="280" y="785" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="cost-s3" value="~$12/mo" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=1;fontColor=#569A31" vertex="1" parent="1">
+          <mxGeometry x="500" y="785" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="cost-catalog" value="~$5/mo" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=1;fontColor=#FF9900" vertex="1" parent="1">
+          <mxGeometry x="720" y="785" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="cost-athena" value="~$20-50/mo" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=1;fontColor=#0066cc" vertex="1" parent="1">
+          <mxGeometry x="940" y="785" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="cost-qs" value="~$220/mo" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=1;fontColor=#147EBA" vertex="1" parent="1">
+          <mxGeometry x="1160" y="785" width="120" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Total Cost Box -->
+        <mxCell id="total-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00cc00;strokeColor=#009900;strokeWidth=2" vertex="1" parent="1">
+          <mxGeometry x="560" y="820" width="480" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="total-text" value="TOTAL: ~$300-400/month  |  ~$4,000/year  |  SAVE $40,000+/year" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#ffffff" vertex="1" parent="1">
+          <mxGeometry x="570" y="830" width="460" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- AWS Glue Pricing Details Section -->
+        <mxCell id="glue-pricing-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9e6;strokeColor=#FF9900;strokeWidth=2" vertex="1" parent="1">
+          <mxGeometry x="40" y="920" width="1520" height="330" as="geometry" />
+        </mxCell>
+
+        <mxCell id="glue-pricing-title" value="⚙️ AWS GLUE PRICING DETAILS" style="text;html=1;strokeColor=none;fillColor=#FF9900;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=18;fontStyle=1;fontColor=#232F3E" vertex="1" parent="1">
+          <mxGeometry x="500" y="930" width="600" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Pricing Overview -->
+        <mxCell id="glue-overview" value="AWS Glue jobs are billed based on Data Processing Units (DPUs) at $0.44 per DPU-Hour&#xa;• Standard Worker (G.1X) = 1 DPU (4 vCPU, 16 GB Memory)&#xa;• Large Worker (G.2X) = 2 DPUs (8 vCPU, 32 GB Memory)&#xa;• Billed per second with 1-minute minimum" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontColor=#333333" vertex="1" parent="1">
+          <mxGeometry x="400" y="975" width="800" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Pricing Table Header -->
+        <mxCell id="glue-table-header" value="Job Type" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FF9900;strokeColor=#232F3E;fontSize=12;fontStyle=1;fontColor=#232F3E" vertex="1" parent="1">
+          <mxGeometry x="80" y="1050" width="200" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="glue-table-header2" value="Pricing Model" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FF9900;strokeColor=#232F3E;fontSize=12;fontStyle=1;fontColor=#232F3E" vertex="1" parent="1">
+          <mxGeometry x="280" y="1050" width="300" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="glue-table-header3" value="Example Cost" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FF9900;strokeColor=#232F3E;fontSize=12;fontStyle=1;fontColor=#232F3E" vertex="1" parent="1">
+          <mxGeometry x="580" y="1050" width="200" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="glue-table-header4" value="Minimum" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FF9900;strokeColor=#232F3E;fontSize=12;fontStyle=1;fontColor=#232F3E" vertex="1" parent="1">
+          <mxGeometry x="780" y="1050" width="120" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Row 1: Spark Jobs -->
+        <mxCell id="glue-row1-1" value="Glue Apache Spark Jobs" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="80" y="1085" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="glue-row1-2" value="$0.44 per DPU-Hour (1 DPU = 4 vCPU, 16GB)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="280" y="1085" width="300" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="glue-row1-3" value="6 DPU × 15 min = $0.66" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="580" y="1085" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="glue-row1-4" value="1 minute" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="780" y="1085" width="120" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Row 2: Flex Jobs -->
+        <mxCell id="glue-row2-1" value="Glue Flex Jobs" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e6ffe6;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="80" y="1125" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="glue-row2-2" value="Lower price for fault-tolerant, non-urgent workloads" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e6ffe6;strokeColor=#82b366;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="280" y="1125" width="300" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="glue-row2-3" value="~30-50% cheaper" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e6ffe6;strokeColor=#82b366;fontSize=11;fontStyle=1;fontColor=#006600" vertex="1" parent="1">
+          <mxGeometry x="580" y="1125" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="glue-row2-4" value="1 minute" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e6ffe6;strokeColor=#82b366;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="780" y="1125" width="120" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Row 3: Interactive Sessions -->
+        <mxCell id="glue-row3-1" value="Interactive Sessions" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="80" y="1165" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="glue-row3-2" value="Same DPU-hour rate (default 5 DPUs)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="280" y="1165" width="300" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="glue-row3-3" value="5 DPU × $0.44 = $2.20/hr" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="580" y="1165" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="glue-row3-4" value="1 minute" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="780" y="1165" width="120" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Row 4: Crawlers -->
+        <mxCell id="glue-row4-1" value="Glue Crawlers" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="80" y="1205" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="glue-row4-2" value="$0.44 per DPU-Hour" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="280" y="1205" width="300" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="glue-row4-3" value="Usually &lt; $1/run" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="580" y="1205" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="glue-row4-4" value="10 minutes" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="780" y="1205" width="120" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Data Catalog Pricing -->
+        <mxCell id="catalog-pricing-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#FF9900;strokeWidth=1" vertex="1" parent="1">
+          <mxGeometry x="950" y="1050" width="580" height="195" as="geometry" />
+        </mxCell>
+        <mxCell id="catalog-pricing-title" value="📋 Glue Data Catalog &amp; Storage" style="text;html=1;strokeColor=none;fillColor=#FF9900;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=14;fontStyle=1;fontColor=#232F3E" vertex="1" parent="1">
+          <mxGeometry x="970" y="1060" width="260" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="catalog-pricing-details" value="• First 1M objects stored: FREE&#xa;• Over 1M objects: $1.00 per 100K objects/month&#xa;• First 1M API requests: FREE&#xa;• Over 1M requests: $1.00 per 1M requests" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#333333;spacingLeft=10;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="970" y="1095" width="280" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Cost Tip Box -->
+        <mxCell id="tip-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6ffe6;strokeColor=#00cc00;strokeWidth=2" vertex="1" parent="1">
+          <mxGeometry x="1250" y="1060" width="260" height="175" as="geometry" />
+        </mxCell>
+        <mxCell id="tip-title" value="💡 COST OPTIMIZATION TIPS" style="text;html=1;strokeColor=none;fillColor=#00cc00;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=12;fontStyle=1;fontColor=#ffffff" vertex="1" parent="1">
+          <mxGeometry x="1260" y="1070" width="240" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="tip-content" value="✅ Use Flex Jobs for batch ETL&#xa;✅ Right-size DPU allocation&#xa;✅ Use partitioning in S3&#xa;✅ Optimize job runtime&#xa;✅ Schedule during off-peak&#xa;✅ Use Parquet format (columnar)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#006600;spacingLeft=10;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="1260" y="1100" width="240" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- Footer -->
+        <mxCell id="footer" value="Document: MongoDB to BI Cost Comparison  |  Author: ArriveHome Data Team  |  Date: January 23, 2026" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#999999" vertex="1" parent="1">
+          <mxGeometry x="500" y="1270" width="600" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

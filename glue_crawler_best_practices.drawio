@@ -1,0 +1,151 @@
+<mxfile host="app.diagrams.net" modified="2026-01-21T00:00:00.000Z" agent="Crawler-Best-Practices" version="21.0.0" type="device">
+  <diagram id="glue-crawler-bp" name="AWS Glue Crawler - MongoDB Best Practices">
+    <mxGraphModel dx="1600" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="AWS Glue Crawler for MongoDB (Arrive Home) - Steps &amp; Best Practices" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=22;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="200" y="20" width="1400" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Swimlanes for steps -->
+        <mxCell id="lane1" value="1) Prereqs (One-time)" style="swimlane;horizontal=0;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="220" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="lane2" value="2) Create MongoDB Connection" style="swimlane;horizontal=0;startSize=30;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="280" y="80" width="220" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="lane3" value="3) Create Crawler" style="swimlane;horizontal=0;startSize=30;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="520" y="80" width="220" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="lane4" value="4) Run &amp; Validate" style="swimlane;horizontal=0;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="760" y="80" width="220" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="lane5" value="5) If Run Fails" style="swimlane;horizontal=0;startSize=30;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1000" y="80" width="220" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="lane6" value="6) Best Practices (Mongo specifics)" style="swimlane;horizontal=0;startSize=30;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1240" y="80" width="240" height="420" as="geometry" />
+        </mxCell>
+
+        <!-- Lane 1 content -->
+        <mxCell id="l1a" value="VPC/SG reachability to Mongo (27017); avoid public DB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontColor=#333;fontSize=11" vertex="1" parent="lane1">
+          <mxGeometry x="20" y="40" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="l1b" value="Secrets Manager for creds; IAM role with GetSecretValue + Glue + CloudWatch Logs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontColor=#333;fontSize=11" vertex="1" parent="lane1">
+          <mxGeometry x="20" y="110" width="180" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="l1c" value="Pick Catalog DB: e.g., arrivehome_raw" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontColor=#333;fontSize=11" vertex="1" parent="lane1">
+          <mxGeometry x="20" y="190" width="180" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Lane 2 content -->
+        <mxCell id="l2a" value="Glue → Data connections → Add → MongoDB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontColor=#333;fontSize=11" vertex="1" parent="lane2">
+          <mxGeometry x="20" y="40" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="l2b" value="Use secret for auth; select VPC/subnet/SG; Test connection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontColor=#333;fontSize=11" vertex="1" parent="lane2">
+          <mxGeometry x="20" y="100" width="180" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Lane 3 content -->
+        <mxCell id="l3a" value="Create Crawler → Data store: MongoDB (this connection)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontColor=#333;fontSize=11" vertex="1" parent="lane3">
+          <mxGeometry x="20" y="40" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="l3b" value="Scope collections: Loan, Correspondent, User, LoanDocument, LoanCondition, LoanSnapshot, Borrower" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontColor=#333;fontSize=11" vertex="1" parent="lane3">
+          <mxGeometry x="20" y="100" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="l3c" value="Output: Catalog DB arrivehome_raw; table prefix mongo_*" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontColor=#333;fontSize=11" vertex="1" parent="lane3">
+          <mxGeometry x="20" y="190" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="l3d" value="Schedule: start manual; add daily/hourly only if needed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontColor=#333;fontSize=11" vertex="1" parent="lane3">
+          <mxGeometry x="20" y="250" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Lane 4 content -->
+        <mxCell id="l4a" value="Run crawler; check Last run &amp; View log" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontColor=#333;fontSize=11" vertex="1" parent="lane4">
+          <mxGeometry x="20" y="40" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="l4b" value="Validate tables in Catalog: types, nesting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontColor=#333;fontSize=11" vertex="1" parent="lane4">
+          <mxGeometry x="20" y="100" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="l4c" value="Promote to ETL: use these tables as inputs for Glue Job 0 (Flatten)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontColor=#333;fontSize=11" vertex="1" parent="lane4">
+          <mxGeometry x="20" y="160" width="180" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Lane 5 content -->
+        <mxCell id="l5a" value="If Failed: check log → common issues:" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontColor=#333;fontSize=11;fontStyle=1" vertex="1" parent="lane5">
+          <mxGeometry x="20" y="40" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="l5b" value="Network/SG/ACL blocking 27017" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontColor=#333;fontSize=11" vertex="1" parent="lane5">
+          <mxGeometry x="20" y="90" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="l5c" value="Auth/secret mismatch" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontColor=#333;fontSize=11" vertex="1" parent="lane5">
+          <mxGeometry x="20" y="130" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="l5d" value="IAM missing GetSecretValue / Catalog writes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontColor=#333;fontSize=11" vertex="1" parent="lane5">
+          <mxGeometry x="20" y="170" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="l5e" value="Classifier issues on complex JSON → add JSON classifier or narrow collections" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontColor=#333;fontSize=11" vertex="1" parent="lane5">
+          <mxGeometry x="20" y="210" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Lane 6 content -->
+        <mxCell id="l6a" value="Scope collections: only those used in downstream ETL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;fontColor=#333;fontSize=11" vertex="1" parent="lane6">
+          <mxGeometry x="20" y="40" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="l6b" value="Arrays/embedded docs (borrowers, assets, liabilities, eepProcessingEntries): keep nested; flatten in ETL Job 0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;fontColor=#333;fontSize=11" vertex="1" parent="lane6">
+          <mxGeometry x="20" y="90" width="200" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="l6c" value="Sensitive fields (ssn, phone, emails, wire routing/account): mask/drop in ETL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;fontColor=#333;fontSize=11" vertex="1" parent="lane6">
+          <mxGeometry x="20" y="170" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="l6d" value="Type normalization in ETL: cast DECIMAL/TIMESTAMP/DATE to match star schema" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;fontColor=#333;fontSize=11" vertex="1" parent="lane6">
+          <mxGeometry x="20" y="230" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="l6e" value="Schema drift control: crawl on change (or daily), review diffs before promoting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;fontColor=#333;fontSize=11" vertex="1" parent="lane6">
+          <mxGeometry x="20" y="290" width="200" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Data flow arrows between lanes -->
+        <mxCell id="arrow12" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666" edge="1" parent="1">
+          <mxGeometry width="40" height="40" relative="1" as="geometry">
+            <mxPoint x="260" y="280" as="sourcePoint" />
+            <mxPoint x="280" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow23" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666" edge="1" parent="1">
+          <mxGeometry width="40" height="40" relative="1" as="geometry">
+            <mxPoint x="500" y="280" as="sourcePoint" />
+            <mxPoint x="520" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow34" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666" edge="1" parent="1">
+          <mxGeometry width="40" height="40" relative="1" as="geometry">
+            <mxPoint x="740" y="280" as="sourcePoint" />
+            <mxPoint x="760" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow45" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666" edge="1" parent="1">
+          <mxGeometry width="40" height="40" relative="1" as="geometry">
+            <mxPoint x="980" y="280" as="sourcePoint" />
+            <mxPoint x="1000" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow56" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666" edge="1" parent="1">
+          <mxGeometry width="40" height="40" relative="1" as="geometry">
+            <mxPoint x="1220" y="280" as="sourcePoint" />
+            <mxPoint x="1240" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Outputs -->
+        <mxCell id="outputs" value="Outputs&#10;- Glue Data Catalog tables (mongo_*)&#10;- CloudWatch logs for runs&#10;- Inputs for Glue ETL Job 0 (flatten)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#333;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1510" y="520" width="270" height="90" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

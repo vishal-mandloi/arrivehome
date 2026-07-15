@@ -1,0 +1,36 @@
+{
+    "description": "CTAS Tables Configuration - Add new reports here",
+    "database": "arrive_home",
+    "s3_base": "s3://arrivehome-bi-prod/athena-ctas",
+    "tables": [
+        {
+            "name": "ctas_eep_monthly_closings",
+            "description": "EEP Monthly Closings Report",
+            "sql_file": "ctas_eep_monthly_closings.sql",
+            "refresh_schedule": "daily",
+            "used_by": ["QuickSight Dashboard", "Monthly Report"]
+        },
+        {
+            "name": "ctas_dpa_monthly_closings",
+            "description": "DPA Monthly Closings with Buyer (USF/MWF)",
+            "sql_file": "ctas_dpa_monthly_closings.sql",
+            "refresh_schedule": "daily",
+            "used_by": ["QuickSight Dashboard", "Monthly Report"]
+        },
+        {
+            "name": "ctas_sales_registrations",
+            "description": "Sales Registrations by Month and Product",
+            "sql_file": "ctas_sales_registrations.sql",
+            "refresh_schedule": "daily",
+            "used_by": ["Sales Dashboard", "Monthly Report"]
+        }
+    ],
+    "how_to_add_new_report": [
+        "1. Create a new SQL file: athena_views/ctas_new_report.sql",
+        "2. Create corresponding view: athena_views/vw_new_report.sql",
+        "3. Add entry to this config file",
+        "4. Add CTAS query to lambda_refresh_ctas.py CTAS_QUERIES dict",
+        "5. Add table config to lambda_refresh_ctas.py CTAS_TABLES list",
+        "6. Deploy updated Lambda function"
+    ]
+}
