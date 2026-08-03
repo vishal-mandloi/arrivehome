@@ -90,6 +90,11 @@ COLLECTIONS = {
         "timestamp_field": "at",
         "output_path": f"{S3_OUTPUT_BASE}/loanconditionevents/"
     },
+    "loanexceptions": {
+        "collection": "loanExceptions",  # camelCase - exact MongoDB name
+        "timestamp_field": "requestedAt",
+        "output_path": f"{S3_OUTPUT_BASE}/loanexceptions/"
+    },
     "loandocuments": {
         "collection": "loanDocuments",  # camelCase - exact MongoDB name
         "timestamp_field": "uploadedAt",

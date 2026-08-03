@@ -17,8 +17,10 @@ Star Schema Tables Created:
         - dim_investor (second mortgage / DPA investors)
         - dim_loan (loan details - main dimension)
         - dim_borrower (borrower information)
+        - dim_eep_processing_entry (EEP processing status history from loans)
         - dim_loancondition (loan conditions)
         - dim_loanconditionevent (condition events/history)
+        - dim_loanexception (loan underwriting exceptions)
         - dim_loandocument (loan documents metadata)
         - dim_holiday (company holidays)
     Facts: 
@@ -27,6 +29,7 @@ Star Schema Tables Created:
 """
 
 import sys
+import boto3
 from awsglue.transforms import *
 from awsglue.dynamicframe import DynamicFrame
 from awsglue.utils import getResolvedOptions
@@ -64,6 +67,7 @@ S3_INVESTORS_RAW_PATH = "s3://arrivehome-bi-prod/raw-zone/investors/"
 
 # Staging zone output
 S3_STAGING_PATH = "s3://arrivehome-bi-prod/staging-zone/"
+GLUE_DATABASE = "arrive_home"
 
 print("=" * 80)
 print("TRANSFORM Raw Zone → Staging Zone (Star Schema)")
@@ -538,6 +542,21 @@ def _empty_dim_borrower_df():
     ]))
 
 
+def _empty_dim_eep_processing_entry_df():
+    """Empty dim_eep_processing_entry with a stable Athena-friendly schema."""
+    return spark.createDataFrame([], StructType([
+        StructField("eep_processing_entry_id", LongType(), True),
+        StructField("loan_id", StringType(), True),
+        StructField("array_index", IntegerType(), True),
+        StructField("entry_key", StringType(), True),
+        StructField("entry_position", IntegerType(), True),
+        StructField("processed_at", TimestampType(), True),
+        StructField("user_id", StringType(), True),
+        StructField("new_processing_status", StringType(), True),
+        StructField("_etl_loaded_at", StringType(), True),
+    ]))
+
+
 # Special helper for correspondent foreign key – handle both 'correspondent' and 'correspondentId'
 def correspondent_fk(df):
     if "correspondent" in df.columns:
@@ -746,6 +765,93 @@ else:
     dim_borrower_df = _empty_dim_borrower_df()
 
 print(f"dim_borrower records: {dim_borrower_df.count():,}")
+
+# ============================================================================
+# STEP 6b: Create dim_eep_processing_entry (EEP processing history from loans)
+# ============================================================================
+print("\n" + "-" * 40)
+print("STEP 6b: Creating dim_eep_processing_entry...")
+print("-" * 40)
+
+if "eepProcessingEntries" in raw_df.columns:
+    eep_type_str = raw_df.schema["eepProcessingEntries"].dataType.simpleString()
+    print(f"  eepProcessingEntries column type: {eep_type_str}")
+
+    eep_map_schema = ArrayType(MapType(StringType(), StringType(), True))
+    if eep_type_str == "string" or eep_type_str.startswith("string"):
+        loans_eep_df = raw_df.withColumn(
+            "eepProcessingEntries",
+            F.when(
+                F.col("eepProcessingEntries").isNull()
+                | (F.length(F.trim(F.col("eepProcessingEntries"))) == 0),
+                F.array().cast(eep_map_schema),
+            ).otherwise(
+                F.from_json(F.col("eepProcessingEntries"), eep_map_schema)
+            ),
+        )
+        eep_use_map = True
+    elif eep_type_str.startswith("array<struct"):
+        loans_eep_df = raw_df
+        eep_use_map = False
+    elif eep_type_str.startswith("array<map"):
+        loans_eep_df = raw_df
+        eep_use_map = True
+    else:
+        print(f"  Warning: unsupported eepProcessingEntries type '{eep_type_str}' — empty table")
+        loans_eep_df = None
+        eep_use_map = False
+
+    def eep_entry_field(name):
+        if eep_use_map:
+            return F.col("eep_entry").getItem(name)
+        return F.col(f"eep_entry.{name}")
+
+    def eep_entry_user_id():
+        if eep_use_map:
+            return F.coalesce(
+                F.col("eep_entry").getItem("userId"),
+                F.col("eep_entry").getItem("user"),
+            ).cast("string")
+
+        element_type = raw_df.schema["eepProcessingEntries"].dataType.elementType
+        field_names = [f.name for f in element_type.fields]
+        if "userId" in field_names:
+            return F.col("eep_entry.userId").cast("string")
+        if "user" in field_names:
+            user_field = element_type["user"].dataType
+            if isinstance(user_field, StructType):
+                user_fields = [f.name for f in user_field.fields]
+                if "_id" in user_fields:
+                    return F.col("eep_entry.user._id").cast("string")
+                if "id" in user_fields:
+                    return F.col("eep_entry.user.id").cast("string")
+            return F.col("eep_entry.user").cast("string")
+        return F.lit(None).cast("string")
+
+    if loans_eep_df is not None:
+        eep_exploded = loans_eep_df.select(
+            F.col("_id").alias("loan_id"),
+            F.posexplode_outer("eepProcessingEntries").alias("array_index", "eep_entry"),
+        ).filter(F.col("eep_entry").isNotNull())
+
+        dim_eep_processing_entry_df = eep_exploded.select(
+            F.monotonically_increasing_id().alias("eep_processing_entry_id"),
+            F.col("loan_id"),
+            F.col("array_index"),
+            eep_entry_field("_key").alias("entry_key"),
+            eep_entry_field("_position").cast("integer").alias("entry_position"),
+            eep_entry_field("at").cast("timestamp").alias("processed_at"),
+            eep_entry_user_id().alias("user_id"),
+            eep_entry_field("newProcessingStatus").alias("new_processing_status"),
+            F.lit(datetime.now().strftime("%Y-%m-%d %H:%M:%S")).alias("_etl_loaded_at"),
+        )
+    else:
+        dim_eep_processing_entry_df = _empty_dim_eep_processing_entry_df()
+else:
+    print("  eepProcessingEntries column not found in raw loans — empty table")
+    dim_eep_processing_entry_df = _empty_dim_eep_processing_entry_df()
+
+print(f"dim_eep_processing_entry records: {dim_eep_processing_entry_df.count():,}")
 
 # ============================================================================
 # STEP 7: Create fact_loan_status (Loan Status Fact)
@@ -973,6 +1079,39 @@ except Exception as e:
     dim_loanconditionevent_df = None
 
 # ============================================================================
+# STEP 10b: Create dim_loanexception
+# ============================================================================
+print("\n" + "-" * 40)
+print("STEP 10b: Creating dim_loanexception...")
+print("-" * 40)
+
+S3_RAW_LOANEXCEPTIONS = "s3://arrivehome-bi-prod/raw-zone/loanexceptions/"
+
+try:
+    loanexceptions_df = spark.read.option("mergeSchema", "true").parquet(S3_RAW_LOANEXCEPTIONS)
+    print(f"Loan exceptions raw records: {loanexceptions_df.count():,}")
+
+    dim_loanexception_df = loanexceptions_df.select(
+        safe_col(loanexceptions_df, "_id").alias("loanexception_id"),
+        ref_fk(loanexceptions_df, "loan").alias("loan_id"),
+        safe_col(loanexceptions_df, "exceptionType").alias("exception_type"),
+        safe_col(loanexceptions_df, "description").alias("description"),
+        safe_col(loanexceptions_df, "requestedAt", "timestamp").alias("requested_at"),
+        ref_fk(loanexceptions_df, "requestedBy").alias("requested_by_id"),
+        safe_col(loanexceptions_df, "approvedAt", "timestamp").alias("approved_at"),
+        ref_fk(loanexceptions_df, "approvedBy").alias("approved_by_id"),
+        safe_col(loanexceptions_df, "deniedAt", "timestamp").alias("denied_at"),
+        ref_fk(loanexceptions_df, "deniedBy").alias("denied_by_id"),
+        safe_col(loanexceptions_df, "createdAt", "timestamp").alias("created_at"),
+        ref_fk(loanexceptions_df, "createdBy").alias("created_by_id"),
+        F.lit(datetime.now().strftime("%Y-%m-%d %H:%M:%S")).alias("_etl_loaded_at"),
+    )
+    print(f"dim_loanexception records: {dim_loanexception_df.count():,}")
+except Exception as e:
+    print(f"Warning: Could not read loanexceptions - {str(e)}")
+    dim_loanexception_df = None
+
+# ============================================================================
 # STEP 11: Create dim_holiday
 # ============================================================================
 print("\n" + "-" * 40)
@@ -1061,9 +1200,11 @@ tables = {
     "dimensions/dim_investor": dim_investor_df,
     "dimensions/dim_loan": dim_loan_df,
     "dimensions/dim_borrower": dim_borrower_df,
+    "dimensions/dim_eep_processing_entry": dim_eep_processing_entry_df,
     "dimensions/dim_loancondition": dim_loancondition_df,
     "dimensions/dim_loancondition_documenttype": dim_loancondition_documenttype_df,
     "dimensions/dim_loanconditionevent": dim_loanconditionevent_df,
+    "dimensions/dim_loanexception": dim_loanexception_df,
     "dimensions/dim_holiday": dim_holiday_df,
     "dimensions/dim_loandocument": dim_loandocument_df,
     "facts/fact_loan_status": fact_loan_status_df,
@@ -1085,17 +1226,71 @@ def fix_ancient_dates(dataframe):
             )
     return dataframe
 
+def _spark_schema_to_glue_columns(df):
+    """Map Spark DataFrame schema to Glue/Athena column definitions."""
+    return [(f.name, f.dataType.simpleString()) for f in df.schema.fields]
+
+
+def _register_glue_table(database, table_name, s3_location, schema_columns):
+    """Create or update Glue catalog table so Athena can query it immediately."""
+    glue = boto3.client("glue")
+    storage_descriptor = {
+        "Columns": [{"Name": name, "Type": dtype} for name, dtype in schema_columns],
+        "Location": s3_location.rstrip("/") + "/",
+        "InputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
+        "OutputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
+        "Compressed": True,
+        "SerdeInfo": {
+            "SerializationLibrary": "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
+            "Parameters": {"serialization.format": "1"},
+        },
+        "StoredAsSubDirectories": False,
+    }
+    table_input = {
+        "Name": table_name,
+        "TableType": "EXTERNAL_TABLE",
+        "Parameters": {"classification": "parquet", "EXTERNAL": "TRUE"},
+        "StorageDescriptor": storage_descriptor,
+        "PartitionKeys": [],
+    }
+    try:
+        glue.get_database(Name=database)
+    except glue.exceptions.EntityNotFoundException:
+        print(f"  Creating Glue database: {database}")
+        glue.create_database(DatabaseInput={"Name": database})
+
+    try:
+        glue.get_table(DatabaseName=database, Name=table_name)
+        print(f"  Updating Glue catalog: {database}.{table_name}")
+        glue.update_table(DatabaseName=database, TableInput=table_input)
+    except glue.exceptions.EntityNotFoundException:
+        print(f"  Creating Glue catalog: {database}.{table_name}")
+        glue.create_table(DatabaseName=database, TableInput=table_input)
+
 for table_path, df in tables.items():
     if df is None:
         print(f"Skipping {table_path} (no data available)")
         continue
     
     output_path = f"{S3_STAGING_PATH}{table_path}/"
+    table_name = table_path.split("/")[-1]
     print(f"Writing {table_path}...")
     
     df = fix_ancient_dates(df)
     df.write.mode("overwrite").parquet(output_path)
     print(f"  ✓ Written to: {output_path}")
+
+    try:
+        _register_glue_table(
+            GLUE_DATABASE,
+            table_name,
+            output_path,
+            _spark_schema_to_glue_columns(df),
+        )
+        print(f"  ✓ Registered in Athena: {GLUE_DATABASE}.{table_name}")
+    except Exception as reg_err:
+        print(f"  ⚠ Could not register {table_name} in Glue catalog: {reg_err}")
+        print(f"    Run staging-zone-crawler manually if needed.")
 
 # ============================================================================
 # Summary
@@ -1112,12 +1307,15 @@ print(f"    - dim_user: {dim_user_df.count():,} records")
 print(f"    - dim_investor: {dim_investor_df.count():,} records")
 print(f"    - dim_loan: {dim_loan_df.count():,} records")
 print(f"    - dim_borrower: {dim_borrower_df.count():,} records")
+print(f"    - dim_eep_processing_entry: {dim_eep_processing_entry_df.count():,} records")
 if dim_loancondition_df is not None:
     print(f"    - dim_loancondition: {dim_loancondition_df.count():,} records")
 if dim_loancondition_documenttype_df is not None:
     print(f"    - dim_loancondition_documenttype: {dim_loancondition_documenttype_df.count():,} records")
 if dim_loanconditionevent_df is not None:
     print(f"    - dim_loanconditionevent: {dim_loanconditionevent_df.count():,} records")
+if dim_loanexception_df is not None:
+    print(f"    - dim_loanexception: {dim_loanexception_df.count():,} records")
 if dim_holiday_df is not None:
     print(f"    - dim_holiday: {dim_holiday_df.count():,} records")
 if dim_loandocument_df is not None:
@@ -1127,7 +1325,7 @@ print(f"    - fact_loan_status: {fact_loan_status_df.count():,} records")
 print(f"    - fact_loan_metrics: {fact_loan_metrics_df.count():,} records")
 print(f"\nOutput location: {S3_STAGING_PATH}")
 print("\nNEXT STEPS:")
-print("1. Run Glue Crawler to update Athena Data Catalog")
+print("1. Tables are auto-registered in Glue catalog (arrive_home)")
 print("2. Query data via Athena Views")
 print("=" * 80)
 
