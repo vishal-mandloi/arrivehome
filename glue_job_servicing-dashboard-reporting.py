@@ -22,6 +22,7 @@ Parameters:
   --OUTPUT_S3_BASE    (default: s3://arrivehome-bi-prod/curated/)
   --GLUE_DATABASE     (default: arrive_home)
   --WRITE_MODE        (snapshot | daily_partition; default: snapshot)
+  --MAX_SOURCE_AGE_DAYS  (optional; fail if source S3 file older than N days; 0=off)
   --DT                (default: today UTC)
 """
 
@@ -188,11 +189,13 @@ def _detect_excel_format(file_bytes: bytes) -> str:
     )
 
 
-def _load_xlsx_bytes_from_s3(s3_uri: str) -> bytes:
+def _load_xlsx_bytes_from_s3(s3_uri: str) -> Tuple[bytes, datetime]:
     bucket, key = _parse_s3_uri(s3_uri)
     s3 = boto3.client("s3")
+    head = s3.head_object(Bucket=bucket, Key=key)
+    last_modified = head["LastModified"]
     obj = s3.get_object(Bucket=bucket, Key=key)
-    return obj["Body"].read()
+    return obj["Body"].read(), last_modified
 
 
 _EXCEL_SUFFIXES = (".xlsx", ".xls")
@@ -574,10 +577,10 @@ def _register_glue_table(
 
 DEFAULT_SOURCE_TABLE_MAP = [
     {
-        "source_s3_uri": (
+        "source_s3_prefix": (
             "s3://servicing-dashboard-reporting/ServicingDashboardReporting/latest/"
-            "ServicingReporting.xlsx"
         ),
+        "source_file_stem": "ServicingReporting",
         "table": "dim_servicing_dashboard",
         "sheet": "Sheet1",
     },
@@ -599,10 +602,25 @@ def _process_source(
     write_mode: str,
     dt: str,
     loaded_at: str,
+    max_source_age_days: int = 0,
 ) -> None:
     print(f"\nDownloading Excel from {source_s3_uri} ...")
-    file_bytes = _load_xlsx_bytes_from_s3(source_s3_uri)
+    file_bytes, source_last_modified = _load_xlsx_bytes_from_s3(source_s3_uri)
+    source_age_days = (datetime.now(timezone.utc) - source_last_modified).days
     print(f"  Downloaded {len(file_bytes):,} bytes")
+    print(f"  Source S3 LastModified (UTC): {source_last_modified.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"  Source age: {source_age_days} day(s)")
+    if max_source_age_days > 0 and source_age_days > max_source_age_days:
+        raise RuntimeError(
+            f"Source file is {source_age_days} day(s) old "
+            f"(max allowed: {max_source_age_days}). "
+            f"Check AppFlow → Lambda sync → s3://servicing-dashboard-reporting/ before Glue."
+        )
+    if source_age_days > 3:
+        print(
+            f"  ⚠ WARNING: source file is {source_age_days} day(s) old. "
+            f"If this job runs daily, verify the Lambda sync ran and copied a new file to latest/."
+        )
 
     sheet_name, sheet_names, raw_rows = _load_excel_sheet_rows(file_bytes, sheet_hint)
     print(f"  Sheet names in workbook: {sheet_names}")
@@ -652,6 +670,10 @@ def _process_source(
         .withColumn("_etl_loaded_at", F.lit(loaded_at))
         .withColumn("_source_s3_uri", F.lit(source_s3_uri))
         .withColumn("_source_sheet", F.lit(sheet_name))
+        .withColumn(
+            "_source_last_modified",
+            F.lit(source_last_modified.strftime("%Y-%m-%d %H:%M:%S")),
+        )
     )
 
     table_location = output_s3_base.rstrip("/") + "/" + table_name + "/"
@@ -736,6 +758,7 @@ if WRITE_MODE not in ("snapshot", "daily_partition"):
     raise RuntimeError(
         f"Invalid --WRITE_MODE: {WRITE_MODE!r}. Expected 'snapshot' or 'daily_partition'."
     )
+MAX_SOURCE_AGE_DAYS = int(_arg_or_default("--MAX_SOURCE_AGE_DAYS", "0"))
 
 SOURCE_TABLE_MAP = _parse_source_table_map(SOURCE_TABLE_MAP_JSON)
 
@@ -759,25 +782,50 @@ print(f"DT: {DT}")
 print(f"Output base: {OUTPUT_S3_BASE}")
 print(f"Glue DB: {GLUE_DATABASE}")
 print(f"Write mode: {WRITE_MODE}")
+print(f"Max source age (days, 0=off): {MAX_SOURCE_AGE_DAYS}")
 print(f"Source -> Table map: {json.dumps(SOURCE_TABLE_MAP, indent=2)}")
+print(
+    "\nPipeline order (must all succeed for fresh data):\n"
+    "  1. AppFlow drops Excel into s3://servicing-dashboard-reporting/ServicingDashboardReporting/\n"
+    "  2. Lambda copies latest files to */latest/ (lambda-servicing-dashboard-reporting)\n"
+    "  3. This Glue job reads */latest/ and writes curated Parquet + Glue catalog\n"
+)
 
 loaded_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 processed = 0
+failed = 0
+errors: List[str] = []
 
 for entry in SOURCE_TABLE_MAP:
     source_s3_uri = _resolve_source_s3_uri(entry)
-    _process_source(
-        spark=spark,
-        source_s3_uri=source_s3_uri,
-        table_name=entry["table"],
-        sheet_hint=entry.get("sheet"),
-        glue_database=GLUE_DATABASE,
-        output_s3_base=OUTPUT_S3_BASE,
-        write_mode=WRITE_MODE,
-        dt=DT,
-        loaded_at=loaded_at,
+    table_name = entry["table"]
+    try:
+        _process_source(
+            spark=spark,
+            source_s3_uri=source_s3_uri,
+            table_name=table_name,
+            sheet_hint=entry.get("sheet"),
+            glue_database=GLUE_DATABASE,
+            output_s3_base=OUTPUT_S3_BASE,
+            write_mode=WRITE_MODE,
+            dt=DT,
+            loaded_at=loaded_at,
+            max_source_age_days=MAX_SOURCE_AGE_DAYS,
+        )
+        processed += 1
+    except Exception as e:
+        failed += 1
+        msg = f"{table_name} ({source_s3_uri}): {e}"
+        errors.append(msg)
+        print(f"\n✗ FAILED {msg}")
+
+if failed:
+    print(f"\nCompleted with errors: {processed} succeeded, {failed} failed.")
+    for err in errors:
+        print(f"  - {err}")
+    raise RuntimeError(
+        f"{failed} source(s) failed. Fix upstream S3/Lambda/AppFlow or check CloudWatch driver logs."
     )
-    processed += 1
 
 print(f"\nAll sources processed ({processed} table(s)).")
 job.commit()
