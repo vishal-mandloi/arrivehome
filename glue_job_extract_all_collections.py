@@ -1,7 +1,7 @@
 """
 AWS Glue ETL Job: Extract All MongoDB Collections to S3
 Purpose: Daily extraction of multiple collections with incremental updates
-Collections: loans, correspondents, users, loanconditions, loanconditionevents, loandocuments, investors, holidays
+Collections: loans, correspondents, correspondentcontracts, users, loanconditions, loanconditionevents, loanexceptions, loandocuments, investors, holidays
 Output: s3://arrivehome-bi-prod/raw-zone/{collection}/
 
 Schedule: Run daily
@@ -75,6 +75,11 @@ COLLECTIONS = {
         "timestamp_field": "updatedAt",
         "output_path": f"{S3_OUTPUT_BASE}/correspondents/"
     },
+    "correspondentcontracts": {
+        "collection": "correspondentContracts",  # camelCase - exact MongoDB name
+        "timestamp_field": "uploadedAt",
+        "output_path": f"{S3_OUTPUT_BASE}/correspondentcontracts/"
+    },
     "users": {
         "collection": "users",
         "timestamp_field": "updatedAt",
@@ -129,6 +134,15 @@ KNOWN_DECIMAL128_LOAN_IDS = [
 DECIMAL128_FIELDS = {
     # Fields OR-combined in one PyMongo pass: null in any triggers a fetch for that row.
     "loans": ["purchasePrice", "appraisedValue"],
+    # Small collection (~169 docs); one pass restores Decimal128 white-label fees.
+    "correspondents": [
+        "whiteLabelProcessingFee",
+        "whiteLabelAdministrativeFeeBasisPoints",
+        "whiteLabelAdministrativeFeeCustomPoolPickupPercentage",
+        "whiteLabelServiceFeeThreePointFiveRepayableBasisPoints",
+        "whiteLabelServiceFeeFivePointZeroRepayableBasisPoints",
+        "whiteLabelDiscountPurchasePricePercentage",
+    ],
 }
 # Loan fields that need the same Decimal128 fix but must NOT be OR'd with price fields
 # (many loans legitimately have null second mortgage UPB; combining would over-fetch).
@@ -1021,7 +1035,10 @@ def extract_collection(collection_name, config, mode, days_back):
 
         # Extra safety: strip any '{value=...}' wrappers that some MongoDB
         # driver versions produce for Decimal128 when serialised as strings.
-        df = clean_decimal128_strings(df, list(financial_fields))
+        decimal_string_fields = list(financial_fields)
+        if collection_name in DECIMAL128_FIELDS:
+            decimal_string_fields.extend(DECIMAL128_FIELDS[collection_name])
+        df = clean_decimal128_strings(df, decimal_string_fields)
 
         # Stage 2 — after flatten + clean (before PyMongo fix)
         log_target_loan("AFTER FLATTEN/CLEAN")

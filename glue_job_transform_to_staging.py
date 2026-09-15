@@ -22,6 +22,7 @@ Star Schema Tables Created:
         - dim_loanconditionevent (condition events/history)
         - dim_loanexception (loan underwriting exceptions)
         - dim_loandocument (loan documents metadata)
+        - dim_correspondent_contract (correspondent contract documents)
         - dim_holiday (company holidays)
     Facts: 
         - fact_loan_status (loan status snapshots)
@@ -261,6 +262,52 @@ def _account_executive_id_expr(available_columns, prefix="", field_types=None):
     return F.lit(None).cast("string")
 
 
+def _corr_decimal_col(df, col_name, precision="decimal(18,2)"):
+    """Correspondent fee fields — often Decimal128 in MongoDB; may arrive as string."""
+    if col_name not in df.columns:
+        return F.lit(None).cast(precision)
+    s = F.col(col_name).cast("string")
+    cleaned = F.when(
+        s.rlike(r'^\{value=.*\}$'),
+        F.regexp_extract(s, r'^\{value=(.*)\}$', 1),
+    ).otherwise(s)
+    cleaned = F.when(
+        cleaned.isNull() | (F.length(F.trim(cleaned)) == 0),
+        F.lit(None),
+    ).otherwise(cleaned)
+    return cleaned.cast(precision)
+
+
+_CORRESPONDENT_WHITE_LABEL_COLS = [
+    ("whiteLabelProcessingFee", "white_label_processing_fee"),
+    ("whiteLabelAdministrativeFeeBasisPoints", "white_label_administrative_fee_basis_points"),
+    (
+        "whiteLabelAdministrativeFeeCustomPoolPickupPercentage",
+        "white_label_admin_fee_custom_pool_pickup_pct",
+    ),
+    (
+        "whiteLabelServiceFeeThreePointFiveRepayableBasisPoints",
+        "white_label_service_fee_3_5_repayable_bps",
+    ),
+    (
+        "whiteLabelServiceFeeFivePointZeroRepayableBasisPoints",
+        "white_label_service_fee_5_0_repayable_bps",
+    ),
+    (
+        "whiteLabelDiscountPurchasePricePercentage",
+        "white_label_discount_purchase_price_pct",
+    ),
+]
+
+
+def _ensure_correspondent_white_label_columns(df):
+    """Add null white-label fee columns when built from loans fallback (no fee data)."""
+    for _, alias in _CORRESPONDENT_WHITE_LABEL_COLS:
+        if alias not in df.columns:
+            df = df.withColumn(alias, F.lit(None).cast("decimal(18,2)"))
+    return df
+
+
 # ============================================================================
 # STEP 4: Create dim_correspondent (Correspondent Dimension)
 # ============================================================================
@@ -287,6 +334,14 @@ if raw_correspondent_df is not None:
         field_types={f.name: f.dataType for f in raw_correspondent_df.schema.fields},
     )
 
+    _wl_src = [src for src, _ in _CORRESPONDENT_WHITE_LABEL_COLS]
+    _wl_present = [c for c in _wl_src if c in corr_cols]
+    print(f"  Raw white-label fields in correspondents parquet: {_wl_present} (of {len(_wl_src)})")
+    if _wl_present:
+        for src in _wl_present:
+            nn = raw_correspondent_df.filter(F.col(src).isNotNull()).count()
+            print(f"    non-null {src}: {nn:,}")
+
     dim_correspondent_df = raw_correspondent_df.select(
         F.col("_id").alias("correspondent_id"),
         F.col("name").alias("correspondent_name"),
@@ -296,7 +351,11 @@ if raw_correspondent_df is not None:
         F.col("state").alias("state"),
         zip_expr.alias("zip_code"),
         F.col("createdAt").alias("created_at"),
-        ae_expr.alias("account_executive_id")
+        ae_expr.alias("account_executive_id"),
+        *[
+            _corr_decimal_col(raw_correspondent_df, src).alias(dst)
+            for src, dst in _CORRESPONDENT_WHITE_LABEL_COLS
+        ],
     ).distinct().filter(F.col("correspondent_id").isNotNull())
 else:
     print("No correspondents raw data available – falling back to loans.corrrespondent field if present...")
@@ -350,11 +409,22 @@ else:
             StructField("account_executive_id", StringType(), True)
         ]))
 
+dim_correspondent_df = _ensure_correspondent_white_label_columns(dim_correspondent_df)
 dim_correspondent_df = dim_correspondent_df.withColumn(
     "_etl_loaded_at", F.lit(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 )
 
 print(f"dim_correspondent records: {dim_correspondent_df.count():,}")
+print(f"  dim_correspondent columns ({len(dim_correspondent_df.columns)}): {dim_correspondent_df.columns}")
+_wl_aliases = [dst for _, dst in _CORRESPONDENT_WHITE_LABEL_COLS]
+_missing_wl = [c for c in _wl_aliases if c not in dim_correspondent_df.columns]
+if _missing_wl:
+    print(f"  ⚠ WARNING: missing white-label columns: {_missing_wl}")
+else:
+    _wl_count = dim_correspondent_df.filter(
+        F.col("white_label_processing_fee").isNotNull()
+    ).count()
+    print(f"  Correspondents with white_label_processing_fee: {_wl_count:,}")
 
 # ============================================================================
 # STEP 4b: Create dim_user (User Dimension from users collection)
@@ -1186,6 +1256,39 @@ except Exception as e:
     dim_loandocument_df = None
 
 # ============================================================================
+# STEP 12b: Create dim_correspondent_contract
+# ============================================================================
+print("\n" + "-" * 40)
+print("STEP 12b: Creating dim_correspondent_contract...")
+print("-" * 40)
+
+S3_RAW_CORRESPONDENTCONTRACTS = "s3://arrivehome-bi-prod/raw-zone/correspondentcontracts/"
+
+try:
+    correspondentcontracts_df = spark.read.option("mergeSchema", "true").parquet(
+        S3_RAW_CORRESPONDENTCONTRACTS
+    )
+    print(f"Correspondent contracts raw records: {correspondentcontracts_df.count():,}")
+
+    dim_correspondent_contract_df = correspondentcontracts_df.select(
+        safe_col(correspondentcontracts_df, "_id").alias("correspondent_contract_id"),
+        ref_fk(correspondentcontracts_df, "correspondent").alias("correspondent_id"),
+        safe_col(correspondentcontracts_df, "fileName").alias("file_name"),
+        safe_col(correspondentcontracts_df, "contentType").alias("content_type"),
+        safe_col(correspondentcontracts_df, "s3Key").alias("s3_key"),
+        safe_col(correspondentcontracts_df, "status").alias("status"),
+        safe_col(correspondentcontracts_df, "uploadedAt", "timestamp").alias("uploaded_at"),
+        ref_fk(correspondentcontracts_df, "uploadedBy").alias("uploaded_by_id"),
+        safe_col(correspondentcontracts_df, "archivedAt", "timestamp").alias("archived_at"),
+        ref_fk(correspondentcontracts_df, "archivedBy").alias("archived_by_id"),
+        F.lit(datetime.now().strftime("%Y-%m-%d %H:%M:%S")).alias("_etl_loaded_at"),
+    )
+    print(f"dim_correspondent_contract records: {dim_correspondent_contract_df.count():,}")
+except Exception as e:
+    print(f"Warning: Could not read correspondentcontracts - {str(e)}")
+    dim_correspondent_contract_df = None
+
+# ============================================================================
 # STEP 13: Write all tables to S3 Staging Zone
 # ============================================================================
 print("\n" + "-" * 40)
@@ -1207,6 +1310,7 @@ tables = {
     "dimensions/dim_loanexception": dim_loanexception_df,
     "dimensions/dim_holiday": dim_holiday_df,
     "dimensions/dim_loandocument": dim_loandocument_df,
+    "dimensions/dim_correspondent_contract": dim_correspondent_contract_df,
     "facts/fact_loan_status": fact_loan_status_df,
     "facts/fact_loan_metrics": fact_loan_metrics_df,
 }
@@ -1231,11 +1335,25 @@ def _spark_schema_to_glue_columns(df):
     return [(f.name, f.dataType.simpleString()) for f in df.schema.fields]
 
 
+def _to_glue_column_type(spark_type: str) -> str:
+    """Normalize Spark simpleString types for Glue/Athena catalog."""
+    t = spark_type.lower().strip()
+    if t.startswith("decimal"):
+        return spark_type  # e.g. decimal(18,2)
+    if t == "long":
+        return "bigint"
+    return spark_type
+
+
 def _register_glue_table(database, table_name, s3_location, schema_columns):
-    """Create or update Glue catalog table so Athena can query it immediately."""
+    """Create or update Glue catalog table so Athena sees the current Parquet schema."""
     glue = boto3.client("glue")
+    catalog_columns = [
+        {"Name": name, "Type": _to_glue_column_type(dtype)}
+        for name, dtype in schema_columns
+    ]
     storage_descriptor = {
-        "Columns": [{"Name": name, "Type": dtype} for name, dtype in schema_columns],
+        "Columns": catalog_columns,
         "Location": s3_location.rstrip("/") + "/",
         "InputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
         "OutputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
@@ -1246,13 +1364,6 @@ def _register_glue_table(database, table_name, s3_location, schema_columns):
         },
         "StoredAsSubDirectories": False,
     }
-    table_input = {
-        "Name": table_name,
-        "TableType": "EXTERNAL_TABLE",
-        "Parameters": {"classification": "parquet", "EXTERNAL": "TRUE"},
-        "StorageDescriptor": storage_descriptor,
-        "PartitionKeys": [],
-    }
     try:
         glue.get_database(Name=database)
     except glue.exceptions.EntityNotFoundException:
@@ -1260,11 +1371,54 @@ def _register_glue_table(database, table_name, s3_location, schema_columns):
         glue.create_database(DatabaseInput={"Name": database})
 
     try:
-        glue.get_table(DatabaseName=database, Name=table_name)
-        print(f"  Updating Glue catalog: {database}.{table_name}")
-        glue.update_table(DatabaseName=database, TableInput=table_input)
+        existing = glue.get_table(DatabaseName=database, Name=table_name)
+        old_sd = existing["Table"].get("StorageDescriptor", {})
+        old_col_names = [c["Name"] for c in old_sd.get("Columns", [])]
+        new_col_names = [c["Name"] for c in catalog_columns]
+        if old_col_names != new_col_names:
+            print(
+                f"  Schema change detected for {table_name}: "
+                f"{len(old_col_names)} -> {len(new_col_names)} columns"
+            )
+            added = set(new_col_names) - set(old_col_names)
+            if added:
+                print(f"  New columns: {sorted(added)}")
+
+        # Merge with existing descriptor so update_table succeeds reliably.
+        merged_sd = dict(old_sd)
+        merged_sd.update(storage_descriptor)
+
+        table_input = {
+            "Name": table_name,
+            "TableType": existing["Table"].get("TableType", "EXTERNAL_TABLE"),
+            "Parameters": existing["Table"].get(
+                "Parameters", {"classification": "parquet", "EXTERNAL": "TRUE"}
+            ),
+            "StorageDescriptor": merged_sd,
+            "PartitionKeys": existing["Table"].get("PartitionKeys", []),
+        }
+        print(f"  Updating Glue catalog: {database}.{table_name} ({len(catalog_columns)} columns)")
+        try:
+            glue.update_table(DatabaseName=database, TableInput=table_input)
+        except Exception as update_err:
+            print(f"  update_table failed ({update_err}); recreating {database}.{table_name}...")
+            glue.delete_table(DatabaseName=database, Name=table_name)
+            glue.create_table(DatabaseName=database, TableInput={
+                "Name": table_name,
+                "TableType": "EXTERNAL_TABLE",
+                "Parameters": {"classification": "parquet", "EXTERNAL": "TRUE"},
+                "StorageDescriptor": storage_descriptor,
+                "PartitionKeys": [],
+            })
     except glue.exceptions.EntityNotFoundException:
-        print(f"  Creating Glue catalog: {database}.{table_name}")
+        table_input = {
+            "Name": table_name,
+            "TableType": "EXTERNAL_TABLE",
+            "Parameters": {"classification": "parquet", "EXTERNAL": "TRUE"},
+            "StorageDescriptor": storage_descriptor,
+            "PartitionKeys": [],
+        }
+        print(f"  Creating Glue catalog: {database}.{table_name} ({len(catalog_columns)} columns)")
         glue.create_table(DatabaseName=database, TableInput=table_input)
 
 for table_path, df in tables.items():
@@ -1277,6 +1431,8 @@ for table_path, df in tables.items():
     print(f"Writing {table_path}...")
     
     df = fix_ancient_dates(df)
+    if table_name == "dim_correspondent":
+        print(f"  dim_correspondent write schema: {[f.name for f in df.schema.fields]}")
     df.write.mode("overwrite").parquet(output_path)
     print(f"  ✓ Written to: {output_path}")
 
@@ -1320,6 +1476,8 @@ if dim_holiday_df is not None:
     print(f"    - dim_holiday: {dim_holiday_df.count():,} records")
 if dim_loandocument_df is not None:
     print(f"    - dim_loandocument: {dim_loandocument_df.count():,} records")
+if dim_correspondent_contract_df is not None:
+    print(f"    - dim_correspondent_contract: {dim_correspondent_contract_df.count():,} records")
 print(f"  Facts:")
 print(f"    - fact_loan_status: {fact_loan_status_df.count():,} records")
 print(f"    - fact_loan_metrics: {fact_loan_metrics_df.count():,} records")
