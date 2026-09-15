@@ -300,11 +300,28 @@ _CORRESPONDENT_WHITE_LABEL_COLS = [
 ]
 
 
+def _corr_array_to_csv(df, col_name):
+    """Convert MongoDB array (e.g. enabledProductTypes) to comma-separated string."""
+    if col_name not in df.columns:
+        return F.lit(None).cast("string")
+    field_type = df.schema[col_name].dataType
+    if isinstance(field_type, ArrayType):
+        return F.concat_ws(",", F.col(col_name))
+    # Already a string (or other scalar) from extract — keep as-is
+    s = F.col(col_name).cast("string")
+    return F.when(
+        s.isNull() | (F.length(F.trim(s)) == 0),
+        F.lit(None).cast("string"),
+    ).otherwise(s)
+
+
 def _ensure_correspondent_white_label_columns(df):
     """Add null white-label fee columns when built from loans fallback (no fee data)."""
     for _, alias in _CORRESPONDENT_WHITE_LABEL_COLS:
         if alias not in df.columns:
             df = df.withColumn(alias, F.lit(None).cast("decimal(18,2)"))
+    if "enabled_product_types" not in df.columns:
+        df = df.withColumn("enabled_product_types", F.lit(None).cast("string"))
     return df
 
 
@@ -352,6 +369,9 @@ if raw_correspondent_df is not None:
         zip_expr.alias("zip_code"),
         F.col("createdAt").alias("created_at"),
         ae_expr.alias("account_executive_id"),
+        _corr_array_to_csv(raw_correspondent_df, "enabledProductTypes").alias(
+            "enabled_product_types"
+        ),
         *[
             _corr_decimal_col(raw_correspondent_df, src).alias(dst)
             for src, dst in _CORRESPONDENT_WHITE_LABEL_COLS
@@ -425,6 +445,10 @@ else:
         F.col("white_label_processing_fee").isNotNull()
     ).count()
     print(f"  Correspondents with white_label_processing_fee: {_wl_count:,}")
+_ept_non_null = dim_correspondent_df.filter(
+    F.col("enabled_product_types").isNotNull()
+).count()
+print(f"  Correspondents with enabled_product_types: {_ept_non_null:,}")
 
 # ============================================================================
 # STEP 4b: Create dim_user (User Dimension from users collection)
