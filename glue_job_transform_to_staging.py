@@ -17,6 +17,8 @@ Star Schema Tables Created:
         - dim_investor (second mortgage / DPA investors)
         - dim_loan (loan details - main dimension)
         - dim_borrower (borrower information)
+        - dim_income_summary (loan incomeSummaries array)
+        - dim_employer (loan employers array)
         - dim_eep_processing_entry (EEP processing status history from loans)
         - dim_loancondition (loan conditions)
         - dim_loanconditionevent (condition events/history)
@@ -632,6 +634,7 @@ def _empty_dim_borrower_df():
         StructField("years_worked", DoubleType(), True),
         StructField("borrower_type", StringType(), True),
         StructField("is_primary", BooleanType(), True),
+        StructField("itin_borrower", BooleanType(), True),
         StructField("_etl_loaded_at", StringType(), True),
     ]))
 
@@ -649,6 +652,106 @@ def _empty_dim_eep_processing_entry_df():
         StructField("new_processing_status", StringType(), True),
         StructField("_etl_loaded_at", StringType(), True),
     ]))
+
+
+def _empty_dim_income_summary_df():
+    """Empty dim_income_summary with a stable Athena-friendly schema."""
+    return spark.createDataFrame([], StructType([
+        StructField("income_summary_id", LongType(), True),
+        StructField("loan_id", StringType(), True),
+        StructField("array_index", IntegerType(), True),
+        StructField("entry_key", StringType(), True),
+        StructField("borrower_position", IntegerType(), True),
+        StructField("self_employed_income", DecimalType(18, 2), True),
+        StructField("_etl_loaded_at", StringType(), True),
+    ]))
+
+
+def _empty_dim_employer_df():
+    """Empty dim_employer with a stable Athena-friendly schema."""
+    return spark.createDataFrame([], StructType([
+        StructField("employer_id", LongType(), True),
+        StructField("loan_id", StringType(), True),
+        StructField("array_index", IntegerType(), True),
+        StructField("employer_key", StringType(), True),
+        StructField("employer_name", StringType(), True),
+        StructField("address", StringType(), True),
+        StructField("city", StringType(), True),
+        StructField("state", StringType(), True),
+        StructField("zip", StringType(), True),
+        StructField("phone", StringType(), True),
+        StructField("self_employed", BooleanType(), True),
+        StructField("employment_classification_type", StringType(), True),
+        StructField("monthly_income_amount", DecimalType(18, 2), True),
+        StructField("position_title", StringType(), True),
+        StructField("start_date", DateType(), True),
+        StructField("months_in_line_of_work", IntegerType(), True),
+        StructField("borrower_position", IntegerType(), True),
+        StructField("current_employer", BooleanType(), True),
+        StructField("_etl_loaded_at", StringType(), True),
+    ]))
+
+
+def _prepare_loan_array_branch(df, col_name):
+    """
+    Normalize a loan nested array for explode (same pattern as borrowers).
+    Returns (branch_df, use_map) or (None, False) if unsupported/missing.
+    """
+    if col_name not in df.columns:
+        print(f"  {col_name} column not found in raw loans — empty table")
+        return None, False
+
+    type_str = df.schema[col_name].dataType.simpleString()
+    print(f"  {col_name} column type: {type_str}")
+    map_schema = ArrayType(MapType(StringType(), StringType(), True))
+
+    if type_str == "string" or type_str.startswith("string"):
+        branch = df.withColumn(
+            col_name,
+            F.when(
+                F.col(col_name).isNull() | (F.length(F.trim(F.col(col_name))) == 0),
+                F.array().cast(map_schema),
+            ).otherwise(F.from_json(F.col(col_name), map_schema)),
+        )
+        return branch, True
+    if type_str.startswith("array<struct"):
+        return df, False
+    if type_str.startswith("array<map"):
+        return df, True
+
+    print(f"  Warning: unsupported {col_name} type '{type_str}' — empty table")
+    return None, False
+
+
+def _nested_field(use_map, struct_alias, name):
+    if use_map:
+        return F.col(struct_alias).getItem(name)
+    return F.col(f"{struct_alias}.{name}")
+
+
+def _nested_money(col_expr, precision="decimal(18,2)"):
+    """Decimal128-safe cast for nested array element fields."""
+    s = col_expr.cast("string")
+    cleaned = F.when(
+        s.rlike(r'^\{value=.*\}$'),
+        F.regexp_extract(s, r'^\{value=(.*)\}$', 1),
+    ).otherwise(s)
+    cleaned = F.when(
+        cleaned.isNull() | (F.length(F.trim(cleaned)) == 0),
+        F.lit(None),
+    ).otherwise(cleaned)
+    return cleaned.cast(precision)
+
+
+def _nested_bool(col_expr):
+    s = col_expr.cast("string")
+    v = F.lower(F.trim(s))
+    return (
+        F.when(v.isNull() | (F.length(v) == 0), F.lit(None).cast("boolean"))
+         .when(v.isin("true", "t", "1", "yes", "y"), F.lit(True))
+         .when(v.isin("false", "f", "0", "no", "n"), F.lit(False))
+         .otherwise(F.lit(None).cast("boolean"))
+    )
 
 
 # Special helper for correspondent foreign key – handle both 'correspondent' and 'correspondentId'
@@ -851,6 +954,7 @@ if "borrowers" in raw_df.columns:
             # Position and primary flag
             borrower_field("position").alias("borrower_type"),  # e.g., "Primary", "Co-Borrower"
             F.when(F.col("borrower_position") == 0, True).otherwise(False).alias("is_primary"),
+            _nested_bool(borrower_field("itinBorrower")).alias("itin_borrower"),
             F.lit(datetime.now().strftime("%Y-%m-%d %H:%M:%S")).alias("_etl_loaded_at")
         )
     else:
@@ -946,6 +1050,92 @@ else:
     dim_eep_processing_entry_df = _empty_dim_eep_processing_entry_df()
 
 print(f"dim_eep_processing_entry records: {dim_eep_processing_entry_df.count():,}")
+
+# ============================================================================
+# STEP 6c: Create dim_income_summary (from loans.incomeSummaries array)
+# ============================================================================
+print("\n" + "-" * 40)
+print("STEP 6c: Creating dim_income_summary...")
+print("-" * 40)
+
+loans_income_df, income_use_map = _prepare_loan_array_branch(raw_df, "incomeSummaries")
+if loans_income_df is not None:
+    income_exploded = loans_income_df.select(
+        F.col("_id").alias("loan_id"),
+        F.posexplode_outer("incomeSummaries").alias("array_index", "income_entry"),
+    ).filter(F.col("income_entry").isNotNull())
+
+    dim_income_summary_df = income_exploded.select(
+        F.monotonically_increasing_id().alias("income_summary_id"),
+        F.col("loan_id"),
+        F.col("array_index"),
+        _nested_field(income_use_map, "income_entry", "_key").alias("entry_key"),
+        _nested_field(income_use_map, "income_entry", "borrowerPosition")
+            .cast("integer")
+            .alias("borrower_position"),
+        _nested_money(
+            _nested_field(income_use_map, "income_entry", "selfEmployedIncome")
+        ).alias("self_employed_income"),
+        F.lit(datetime.now().strftime("%Y-%m-%d %H:%M:%S")).alias("_etl_loaded_at"),
+    )
+else:
+    dim_income_summary_df = _empty_dim_income_summary_df()
+
+print(f"dim_income_summary records: {dim_income_summary_df.count():,}")
+
+# ============================================================================
+# STEP 6d: Create dim_employer (from loans.employers array)
+# ============================================================================
+print("\n" + "-" * 40)
+print("STEP 6d: Creating dim_employer...")
+print("-" * 40)
+
+loans_employer_df, employer_use_map = _prepare_loan_array_branch(raw_df, "employers")
+if loans_employer_df is not None:
+    employer_exploded = loans_employer_df.select(
+        F.col("_id").alias("loan_id"),
+        F.posexplode_outer("employers").alias("array_index", "employer"),
+    ).filter(F.col("employer").isNotNull())
+
+    dim_employer_df = employer_exploded.select(
+        F.monotonically_increasing_id().alias("employer_id"),
+        F.col("loan_id"),
+        F.col("array_index"),
+        _nested_field(employer_use_map, "employer", "_key").alias("employer_key"),
+        _nested_field(employer_use_map, "employer", "name").alias("employer_name"),
+        _nested_field(employer_use_map, "employer", "address").alias("address"),
+        _nested_field(employer_use_map, "employer", "city").alias("city"),
+        _nested_field(employer_use_map, "employer", "state").alias("state"),
+        _nested_field(employer_use_map, "employer", "zip").alias("zip"),
+        _nested_field(employer_use_map, "employer", "phone").alias("phone"),
+        _nested_bool(
+            _nested_field(employer_use_map, "employer", "selfEmployed")
+        ).alias("self_employed"),
+        _nested_field(employer_use_map, "employer", "employmentClassificationType").alias(
+            "employment_classification_type"
+        ),
+        _nested_money(
+            _nested_field(employer_use_map, "employer", "monthlyIncomeAmount")
+        ).alias("monthly_income_amount"),
+        _nested_field(employer_use_map, "employer", "positionTitle").alias("position_title"),
+        _nested_field(employer_use_map, "employer", "startDate")
+            .cast("date")
+            .alias("start_date"),
+        _nested_field(employer_use_map, "employer", "monthsInLineOfWork")
+            .cast("integer")
+            .alias("months_in_line_of_work"),
+        _nested_field(employer_use_map, "employer", "borrowerPosition")
+            .cast("integer")
+            .alias("borrower_position"),
+        _nested_bool(
+            _nested_field(employer_use_map, "employer", "currentEmployer")
+        ).alias("current_employer"),
+        F.lit(datetime.now().strftime("%Y-%m-%d %H:%M:%S")).alias("_etl_loaded_at"),
+    )
+else:
+    dim_employer_df = _empty_dim_employer_df()
+
+print(f"dim_employer records: {dim_employer_df.count():,}")
 
 # ============================================================================
 # STEP 7: Create fact_loan_status (Loan Status Fact)
@@ -1059,7 +1249,11 @@ fact_loan_metrics_df = raw_df.select(
     
     # Borrower metrics
     safe_col(raw_df, "totalIncome", "decimal(18,2)").alias("total_income"),
-    safe_col(raw_df, "totalAssetsBalance", "decimal(18,2)").alias("total_assets"),
+    # MongoDB field is totalAssets (Decimal128); keep totalAssetsBalance as legacy fallback
+    F.coalesce(
+        safe_money_decimal(raw_df, "totalAssets"),
+        safe_money_decimal(raw_df, "totalAssetsBalance"),
+    ).alias("total_assets"),
     safe_col(raw_df, "totalLiabilitiesBalance", "decimal(18,2)").alias("total_liabilities"),
     safe_col(raw_df, "totalBackEndDebtToIncomeRatio", "decimal(10,6)").alias("backend_dti"),
     safe_col(raw_df, "totalFrontEndDebtToIncomeRatio", "decimal(10,6)").alias("frontend_dti"),
@@ -1069,6 +1263,8 @@ fact_loan_metrics_df = raw_df.select(
     safe_col(raw_df, "totalMonthlyLoanPayment", "decimal(18,2)").alias("monthly_payment"),
     safe_col(raw_df, "escrowMonthlyPayment", "decimal(18,2)").alias("escrow_payment"),
     safe_col(raw_df, "pmiMonthlyPayment", "decimal(18,2)").alias("pmi_payment"),
+    safe_money_decimal(raw_df, "paymentShock").alias("payment_shock"),
+    safe_money_decimal(raw_df, "fundsToClose").alias("funds_to_close"),
     
     # Pricing
     safe_col(raw_df, "basePrice", "decimal(10,6)").alias("base_price"),
@@ -1327,6 +1523,8 @@ tables = {
     "dimensions/dim_investor": dim_investor_df,
     "dimensions/dim_loan": dim_loan_df,
     "dimensions/dim_borrower": dim_borrower_df,
+    "dimensions/dim_income_summary": dim_income_summary_df,
+    "dimensions/dim_employer": dim_employer_df,
     "dimensions/dim_eep_processing_entry": dim_eep_processing_entry_df,
     "dimensions/dim_loancondition": dim_loancondition_df,
     "dimensions/dim_loancondition_documenttype": dim_loancondition_documenttype_df,
@@ -1487,6 +1685,8 @@ print(f"    - dim_user: {dim_user_df.count():,} records")
 print(f"    - dim_investor: {dim_investor_df.count():,} records")
 print(f"    - dim_loan: {dim_loan_df.count():,} records")
 print(f"    - dim_borrower: {dim_borrower_df.count():,} records")
+print(f"    - dim_income_summary: {dim_income_summary_df.count():,} records")
+print(f"    - dim_employer: {dim_employer_df.count():,} records")
 print(f"    - dim_eep_processing_entry: {dim_eep_processing_entry_df.count():,} records")
 if dim_loancondition_df is not None:
     print(f"    - dim_loancondition: {dim_loancondition_df.count():,} records")

@@ -146,7 +146,12 @@ DECIMAL128_FIELDS = {
 }
 # Loan fields that need the same Decimal128 fix but must NOT be OR'd with price fields
 # (many loans legitimately have null second mortgage UPB; combining would over-fetch).
-LOANS_DECIMAL128_FIELDS_INDEPENDENT = ["secondMortgageUpb"]
+LOANS_DECIMAL128_FIELDS_INDEPENDENT = [
+    "secondMortgageUpb",
+    "paymentShock",
+    "fundsToClose",
+    "totalAssets",
+]
 
 # Rows per Spark DataFrame batch when reading large collections via PyMongo.
 PYMONGO_SPARK_BATCH_SIZE = 25000
@@ -901,7 +906,7 @@ def extract_collection(collection_name, config, mode, days_back):
                 financial_fields = {
                     "purchasePrice", "appraisedValue",
                     "firstMortgageTotalLoanAmount", "firstMortgageBaseLoanAmount",
-                    "secondMortgageUpb",
+                    "secondMortgageUpb", "paymentShock", "fundsToClose", "totalAssets",
                 }
                 df = clean_decimal128_strings(df, list(financial_fields))
             return finalize_and_write_dataframe(
@@ -992,7 +997,7 @@ def extract_collection(collection_name, config, mode, days_back):
         financial_fields = {
             "purchasePrice", "appraisedValue",
             "firstMortgageTotalLoanAmount", "firstMortgageBaseLoanAmount",
-            "secondMortgageUpb",
+            "secondMortgageUpb", "paymentShock", "fundsToClose", "totalAssets",
         }
         print(f"  DataFrame schema for key fields:")
         for fld in df.schema.fields:
@@ -1077,7 +1082,7 @@ def extract_collection(collection_name, config, mode, days_back):
                     financial_fields = {
                         "purchasePrice", "appraisedValue",
                         "firstMortgageTotalLoanAmount", "firstMortgageBaseLoanAmount",
-                        "secondMortgageUpb",
+                        "secondMortgageUpb", "paymentShock", "fundsToClose", "totalAssets",
                     }
                     df = clean_decimal128_strings(df, list(financial_fields))
                 return finalize_and_write_dataframe(
