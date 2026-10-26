@@ -23,6 +23,7 @@ Star Schema Tables Created:
         - dim_loancondition (loan conditions)
         - dim_loanconditionevent (condition events/history)
         - dim_loanexception (loan underwriting exceptions)
+        - dim_eep_loan_turn_time (EEP loan turn-time milestones and day counts)
         - dim_loandocument (loan documents metadata)
         - dim_correspondent_contract (correspondent contract documents)
         - dim_holiday (company holidays)
@@ -833,6 +834,7 @@ dim_loan_base = raw_df.select(
     user_fk(raw_df, "eepProcessor").alias("eep_processor_id"),
     user_fk(raw_df, "eepUnderwriter").alias("eep_underwriter_id"),
     user_fk(raw_df, "eepCloser").alias("eep_closer_id"),
+    user_fk(raw_df, "eepSupportSpecialist").alias("eep_support_specialist_id"),
     
     # Second mortgage / DPA investor (loan denormalized + FK to dim_investor)
     safe_col(raw_df, "secondMortgageInvestorId").alias("second_mortgage_investor_id"),
@@ -845,6 +847,9 @@ dim_loan_base = raw_df.select(
     safe_col(raw_df, "closingDate", "date").alias("closing_date"),
     safe_col(raw_df, "fundingDate", "date").alias("funding_date"),
     safe_col(raw_df, "closedAt", "timestamp").alias("closed_at"),
+    safe_col(raw_df, "eepFileReviewedAt", "timestamp").alias("eep_file_reviewed_at"),
+    safe_col(raw_df, "finalApprovalAt", "timestamp").alias("final_approval_at"),
+    safe_col(raw_df, "processorReviewedDate", "date").alias("processor_reviewed_date"),
     
     # ETL metadata
     F.lit(datetime.now().strftime("%Y-%m-%d %H:%M:%S")).alias("_etl_loaded_at")
@@ -1161,6 +1166,40 @@ fact_loan_status_df = raw_df.select(
     safe_col(raw_df, "secondMortgageSoldDate", "timestamp").alias("second_mortgage_sold_date"),
     safe_col(raw_df, "secondMortgageInvoiceTradeNumber", "string").alias("second_mortgage_invoice_trade_number"),
     safe_clean_string(raw_df, "secondMortgageMinNumber").alias("second_mortgage_min_number"),
+    # Second mortgage repurchase / buyback
+    safe_clean_string(raw_df, "secondMortgageRepurchaseStatus").alias(
+        "second_mortgage_repurchase_status"
+    ),
+    safe_clean_string(raw_df, "secondMortgageRepurchaseByCorrespondentStatus").alias(
+        "second_mortgage_repurchase_by_correspondent_status"
+    ),
+    safe_clean_string(raw_df, "secondMortgageBuybackFromInvestorStatus").alias(
+        "second_mortgage_buyback_from_investor_status"
+    ),
+    safe_bool(raw_df, "secondMortgageRepurchaseByCorrespondentDiscountOptionTaken").alias(
+        "second_mortgage_repurchase_by_correspondent_discount_option_taken"
+    ),
+    safe_col(
+        raw_df, "secondMortgageRepurchaseByCorrespondentPendingReviewAt", "timestamp"
+    ).alias("second_mortgage_repurchase_by_correspondent_pending_review_at"),
+    safe_col(
+        raw_df, "secondMortgageRepurchaseByCorrespondentDemandLetterSentAt", "timestamp"
+    ).alias("second_mortgage_repurchase_by_correspondent_demand_letter_sent_at"),
+    safe_col(
+        raw_df, "secondMortgageRepurchaseByCorrespondentFundsReceivedAt", "timestamp"
+    ).alias("second_mortgage_repurchase_by_correspondent_funds_received_at"),
+    safe_col(
+        raw_df,
+        "secondMortgageRepurchaseByCorrespondentServiceTransferCompletedAt",
+        "timestamp",
+    ).alias("second_mortgage_repurchase_by_correspondent_service_transfer_completed_at"),
+    # Stored as date strings in MongoDB (e.g. "2025-03-01")
+    safe_col(
+        raw_df, "secondMortgageRepurchaseByCorrespondentDefaultPaymentDate", "date"
+    ).alias("second_mortgage_repurchase_by_correspondent_default_payment_date"),
+    safe_col(raw_df, "secondMortgageDelinquencyStatusUpdatedAt", "date").alias(
+        "second_mortgage_delinquency_status_updated_at"
+    ),
     user_fk(raw_df, "eepProcessor").alias("eep_processor_id"),
     user_fk(raw_df, "eepUnderwriter").alias("eep_underwriter_id"),
     user_fk(raw_df, "eepCloser").alias("eep_closer_id"),
@@ -1402,6 +1441,60 @@ except Exception as e:
     dim_loanexception_df = None
 
 # ============================================================================
+# STEP 10c: Create dim_eep_loan_turn_time
+# ============================================================================
+print("\n" + "-" * 40)
+print("STEP 10c: Creating dim_eep_loan_turn_time...")
+print("-" * 40)
+
+S3_RAW_EEP_LOAN_TURN_TIME = "s3://arrivehome-bi-prod/raw-zone/eeploanturntimerecords/"
+
+try:
+    eep_turn_time_df = spark.read.option("mergeSchema", "true").parquet(
+        S3_RAW_EEP_LOAN_TURN_TIME
+    )
+    print(f"EEP loan turn-time raw records: {eep_turn_time_df.count():,}")
+
+    dim_eep_loan_turn_time_df = eep_turn_time_df.select(
+        safe_col(eep_turn_time_df, "_id").alias("eep_loan_turn_time_id"),
+        ref_fk(eep_turn_time_df, "loan").alias("loan_id"),
+        safe_col(eep_turn_time_df, "activeDays", "integer").alias("active_days"),
+        safe_col(eep_turn_time_df, "registeredDate", "date").alias("registered_date"),
+        safe_col(eep_turn_time_df, "registeredDays", "integer").alias("registered_days"),
+        safe_col(eep_turn_time_df, "incompleteDate", "date").alias("incomplete_date"),
+        safe_col(eep_turn_time_df, "fileReviewedDate", "date").alias("file_reviewed_date"),
+        safe_col(eep_turn_time_df, "fileReviewedDays", "integer").alias("file_reviewed_days"),
+        safe_col(eep_turn_time_df, "submittedToUnderwritingDate", "date").alias(
+            "submitted_to_underwriting_date"
+        ),
+        safe_col(eep_turn_time_df, "submittedToUnderwritingDays", "integer").alias(
+            "submitted_to_underwriting_days"
+        ),
+        safe_col(eep_turn_time_df, "initialUnderwritingDecisionDate", "date").alias(
+            "initial_underwriting_decision_date"
+        ),
+        safe_col(eep_turn_time_df, "initialUnderwritingDecisionDays", "integer").alias(
+            "initial_underwriting_decision_days"
+        ),
+        safe_col(eep_turn_time_df, "finalApprovalDate", "date").alias("final_approval_date"),
+        safe_col(eep_turn_time_df, "finalApprovalDays", "integer").alias("final_approval_days"),
+        safe_col(eep_turn_time_df, "clearToCloseDate", "date").alias("clear_to_close_date"),
+        safe_col(eep_turn_time_df, "clearToCloseDays", "integer").alias("clear_to_close_days"),
+        safe_col(eep_turn_time_df, "closedDate", "date").alias("closed_date"),
+        safe_col(eep_turn_time_df, "closedDays", "integer").alias("closed_days"),
+        safe_col(eep_turn_time_df, "purchasedDate", "date").alias("purchased_date"),
+        safe_col(eep_turn_time_df, "purchasedDays", "integer").alias("purchased_days"),
+        safe_col(eep_turn_time_df, "closedFromFileReviewedDays", "integer").alias(
+            "closed_from_file_reviewed_days"
+        ),
+        F.lit(datetime.now().strftime("%Y-%m-%d %H:%M:%S")).alias("_etl_loaded_at"),
+    )
+    print(f"dim_eep_loan_turn_time records: {dim_eep_loan_turn_time_df.count():,}")
+except Exception as e:
+    print(f"Warning: Could not read eeploanturntimerecords - {str(e)}")
+    dim_eep_loan_turn_time_df = None
+
+# ============================================================================
 # STEP 11: Create dim_holiday
 # ============================================================================
 print("\n" + "-" * 40)
@@ -1530,6 +1623,7 @@ tables = {
     "dimensions/dim_loancondition_documenttype": dim_loancondition_documenttype_df,
     "dimensions/dim_loanconditionevent": dim_loanconditionevent_df,
     "dimensions/dim_loanexception": dim_loanexception_df,
+    "dimensions/dim_eep_loan_turn_time": dim_eep_loan_turn_time_df,
     "dimensions/dim_holiday": dim_holiday_df,
     "dimensions/dim_loandocument": dim_loandocument_df,
     "dimensions/dim_correspondent_contract": dim_correspondent_contract_df,
@@ -1696,6 +1790,8 @@ if dim_loanconditionevent_df is not None:
     print(f"    - dim_loanconditionevent: {dim_loanconditionevent_df.count():,} records")
 if dim_loanexception_df is not None:
     print(f"    - dim_loanexception: {dim_loanexception_df.count():,} records")
+if dim_eep_loan_turn_time_df is not None:
+    print(f"    - dim_eep_loan_turn_time: {dim_eep_loan_turn_time_df.count():,} records")
 if dim_holiday_df is not None:
     print(f"    - dim_holiday: {dim_holiday_df.count():,} records")
 if dim_loandocument_df is not None:

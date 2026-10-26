@@ -1,7 +1,7 @@
 """
 AWS Glue ETL Job: Extract All MongoDB Collections to S3
 Purpose: Daily extraction of multiple collections with incremental updates
-Collections: loans, correspondents, correspondentcontracts, users, loanconditions, loanconditionevents, loanexceptions, loandocuments, investors, holidays
+Collections: loans, correspondents, correspondentcontracts, users, loanconditions, loanconditionevents, loanexceptions, loandocuments, investors, holidays, eeploanturntimerecords
 Output: s3://arrivehome-bi-prod/raw-zone/{collection}/
 
 Schedule: Run daily
@@ -99,6 +99,11 @@ COLLECTIONS = {
         "collection": "loanExceptions",  # camelCase - exact MongoDB name
         "timestamp_field": "requestedAt",
         "output_path": f"{S3_OUTPUT_BASE}/loanexceptions/"
+    },
+    "eeploanturntimerecords": {
+        "collection": "eepLoanTurnTimeRecords",  # camelCase - exact MongoDB name
+        "timestamp_field": None,  # No reliable updatedAt; full refresh
+        "output_path": f"{S3_OUTPUT_BASE}/eeploanturntimerecords/"
     },
     "loandocuments": {
         "collection": "loanDocuments",  # camelCase - exact MongoDB name

@@ -386,6 +386,8 @@ DEFAULT_FOLDER_TABLE_MAP = {
     "Ext_Kirkland": "ext_kirkland",
     "Ext_LamarNationalBank": "ext_lamar_national_bank",
     "Ext_TMRR": "ext_tmrr",
+    "Ext_BlackstarStabilityFundF1A": "ext_blackstar_stability_fund_f1a",
+    "Ext_MVBBank": "ext_mvb_bank"
 }
 
 
